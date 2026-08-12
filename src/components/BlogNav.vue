@@ -5,6 +5,7 @@
       <nav class="nav-links">
         <router-link class="nav-link" :to="{ name: 'home' }">文章</router-link>
         <router-link class="nav-link" :to="{ name: 'workbench' }">工作台</router-link>
+        <router-link class="nav-link" :to="{ name: 'effects' }">特效</router-link>
       </nav>
     </div>
   </header>

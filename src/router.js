@@ -14,6 +14,11 @@ const router = createRouter({
       path: '/workbench',
       name: 'workbench',
       component: () => import('./views/WorkbenchView.vue')
+    },
+    {
+      path: '/workbench/effects',
+      name: 'effects',
+      component: () => import('./views/WorkbenchEffectsView.vue')
     }
   ]
 })
