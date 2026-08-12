@@ -1,10 +1,11 @@
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { renderMarkdown } from '../utils/markdown'
 import { parseFrontmatter } from '../utils/frontmatter'
 
 const props = defineProps({
-  dir: { type: String, required: true } // 'posts' | 'notes'
+  dir: { type: String, required: true }, // 'posts' | 'notes'
+  initialFile: { type: String, default: '' }
 })
 
 const REPO = 'wmoonlq/blog'
@@ -215,8 +216,30 @@ async function remove(name, sha) {
   }
 }
 
-onMounted(() => {
-  if (token.value) checkConnection()
+let pendingFile = null
+
+function loadInitialFile() {
+  if (!pendingFile) return
+  const target = pendingFile
+  pendingFile = null
+  const f = files.value.find((x) => x.name === target)
+  if (f) {
+    editFile(f.name, f.sha)
+  } else {
+    message.value = `未找到文件 ${target}`
+  }
+}
+
+onMounted(async () => {
+  if (props.initialFile) pendingFile = props.initialFile
+  if (token.value) {
+    await checkConnection()
+    loadInitialFile()
+  }
+})
+
+watch(connStatus, (s) => {
+  if (s === 'ok') loadInitialFile()
 })
 </script>
 

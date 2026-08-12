@@ -12,7 +12,13 @@ const html = computed(() => (post.value ? renderMarkdown(post.value.content) : '
 <template>
   <div class="page">
     <article v-if="post">
-      <router-link class="back" :to="{ name: 'home' }">← 全部文章</router-link>
+      <div class="article-tools">
+        <router-link class="back" :to="{ name: 'home' }">← 全部文章</router-link>
+        <router-link
+          class="edit-link"
+          :to="{ name: 'posts-editor', query: { file: `${post.slug}.md` } }"
+        >编辑</router-link>
+      </div>
       <header class="article-head">
         <h1 class="article-title">{{ post.title }}</h1>
         <div class="article-meta">

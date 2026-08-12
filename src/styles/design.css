@@ -201,6 +201,28 @@ img {
   color: var(--accent);
 }
 
+.article-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 48px;
+}
+
+.article-tools .back {
+  margin-top: 0;
+}
+
+.edit-link {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.edit-link:hover {
+  color: var(--accent);
+}
+
 .article-head {
   padding: 56px 0 40px;
   margin-bottom: 48px;
@@ -704,6 +726,12 @@ img {
   font-size: 13px;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
+}
+
+.note-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
 .note-title {
