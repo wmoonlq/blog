@@ -5,9 +5,8 @@ import { parseFrontmatter } from '../utils/frontmatter'
 
 const REPO = 'wmoonlq/blog'
 const API = 'https://api.github.com'
-const DEFAULT_TOKEN = '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'
 
-const token = ref(localStorage.getItem('notes-token') || DEFAULT_TOKEN)
+const token = ref(localStorage.getItem('notes-token') || '')
 const files = ref([])
 const loading = ref(false)
 const saving = ref(false)
@@ -49,14 +48,21 @@ function deb64(text) {
   return decodeURIComponent(escape(atob(text)))
 }
 
+async function saveToken() {
+  localStorage.setItem('notes-token', token.value)
+  message.value = ''
+  await loadFiles()
+}
+
 async function loadFiles() {
+  if (!token.value) return
   loading.value = true
   message.value = ''
   try {
     const res = await fetch(`${API}/repos/${REPO}/contents/src/notes`, {
       headers: headers()
     })
-    if (!res.ok) throw new Error(`连接失败（${res.status}）`)
+    if (!res.ok) throw new Error(`连接失败（${res.status}），请检查 Token`)
     files.value = await res.json()
   } catch (e) {
     message.value = e.message
@@ -96,6 +102,11 @@ function resetForm() {
 }
 
 async function save() {
+  if (!token.value) {
+    showAdvanced.value = true
+    message.value = '请先在高级选项中连接 GitHub Token'
+    return
+  }
   if (!form.date) {
     message.value = '请填写日期'
     return
@@ -148,8 +159,7 @@ async function remove(name, sha) {
 }
 
 onMounted(() => {
-  localStorage.setItem('notes-token', token.value)
-  loadFiles()
+  if (token.value) loadFiles()
 })
 </script>
 
@@ -192,6 +202,19 @@ onMounted(() => {
         {{ showAdvanced ? '收起' : '展开' }}高级选项{{ showAdvanced ? '▴' : '▾' }}
       </button>
       <div v-show="showAdvanced">
+        <div class="token-row advanced-block">
+          <input
+            v-model="token"
+            type="password"
+            class="input token-input"
+            placeholder="GitHub Token（仅保存在本机浏览器）"
+          />
+          <button class="btn" @click="saveToken">连接</button>
+        </div>
+        <p class="token-hint">
+          建议创建仅限本仓库的 fine-grained Token（Contents 读写权限），访问
+          github.com → Settings → Developer settings → Fine-grained tokens
+        </p>
         <div v-if="loading" class="editor-msg">加载中…</div>
         <div v-else-if="files.length" class="file-list">
           <div v-for="f in files" :key="f.name" class="file-row">
