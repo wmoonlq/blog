@@ -39,6 +39,20 @@ git commit -m "feat: add blog xxx"
 git push origin main
 ```
 
+## 写随笔
+
+在 `src/notes/` 新建 `.md` 文件，frontmatter 仅需 `date` 字段（`title` 可选），正文直接展示在随笔页：
+
+```markdown
+---
+date: "2026-08-12"
+---
+
+随手写的内容
+```
+
+也可以直接在 GitHub 网页上新建/编辑 `src/notes/` 下的文件，保存即自动构建发布，手机也能写。
+
 ## 目录结构
 
 ```

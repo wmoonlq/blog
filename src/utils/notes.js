@@ -1,26 +1,21 @@
 import { parseFrontmatter } from './frontmatter'
 
-const modules = import.meta.glob('../posts/*.md', {
+const modules = import.meta.glob('../notes/*.md', {
   query: '?raw',
   import: 'default',
   eager: true
 })
 
-export function getAllPosts() {
+export function getAllNotes() {
   return Object.entries(modules)
     .map(([path, raw]) => {
       const { data, content } = parseFrontmatter(raw)
       return {
         slug: path.split('/').pop().replace(/\.md$/, ''),
-        title: data.title || '未命名',
+        title: data.title || '',
         date: data.date || '',
-        tags: Array.isArray(data.tags) ? data.tags : [],
         content
       }
     })
     .sort((a, b) => (a.date < b.date ? 1 : -1))
-}
-
-export function getPostBySlug(slug) {
-  return getAllPosts().find((p) => p.slug === slug) || null
 }
