@@ -120,6 +120,16 @@ async function save() {
   const titleLine = form.title.trim() ? `title: "${form.title.trim()}"\n` : ''
   const content = `---\ndate: "${form.date}"\n${titleLine}---\n\n${form.content.trimEnd()}\n`
 
+  let sha = editingSha.value
+  let isUpdate = !!sha
+  if (!sha) {
+    const existing = files.value.find((f) => f.name === finalName)
+    if (existing) {
+      sha = existing.sha
+      isUpdate = true
+    }
+  }
+
   saving.value = true
   message.value = ''
   try {
@@ -127,13 +137,24 @@ async function save() {
       method: 'PUT',
       headers: { ...headers(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: editingSha.value ? `docs: update note ${finalName}` : `feat: add note ${finalName}`,
+        message: isUpdate ? `docs: update note ${finalName}` : `feat: add note ${finalName}`,
         content: b64(content),
-        sha: editingSha.value || undefined
+        sha: sha || undefined
       })
     })
-    if (!res.ok) throw new Error(`保存失败（${res.status}）`)
-    message.value = '已提交到 GitHub，等待自动构建发布'
+    if (!res.ok) {
+      let detail = ''
+      try {
+        const j = await res.json()
+        detail = j.message || ''
+      } catch {
+        /* ignore */
+      }
+      throw new Error(`保存失败（${res.status}）${detail ? `：${detail}` : ''}`)
+    }
+    message.value = isUpdate
+      ? '已更新，等待自动构建发布'
+      : '已提交到 GitHub，等待自动构建发布'
     await checkConnection()
   } catch (e) {
     message.value = e.message
