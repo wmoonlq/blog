@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 
 const open = ref(false)
@@ -20,7 +20,13 @@ function close() {
   open.value = false
 }
 
+watch(
+  () => route.path,
+  () => close()
+)
+
 function onClickOutside(e) {
+  if (!e.target || !e.target.closest) return
   if (!e.target.closest('.nav')) close()
 }
 
@@ -32,7 +38,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
   <header class="nav">
     <div class="nav-inner">
       <router-link class="nav-brand" :to="{ name: 'home' }" @click="close">wmoonlq · Blog</router-link>
-      <button class="nav-toggle" :aria-expanded="open" @click="toggle">
+      <button class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
         <span v-if="!open">☰</span>
         <span v-else>✕</span>
       </button>
