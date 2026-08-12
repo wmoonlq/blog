@@ -13,8 +13,8 @@ const mouse = { x: 0, y: 0, active: false }
 function resize() {
   const canvas = canvasRef.value
   const dpr = window.devicePixelRatio || 1
-  W = canvas.clientWidth
-  H = canvas.clientHeight
+  W = window.innerWidth
+  H = window.innerHeight
   canvas.width = W * dpr
   canvas.height = H * dpr
   ctx = canvas.getContext('2d')
@@ -22,16 +22,16 @@ function resize() {
 }
 
 function spawn() {
-  if (!mouse.active) return
+  if (!mouse.active || parts.length > 90) return
   for (let i = 0; i < 2; i++) {
     parts.push({
-      x: mouse.x + (Math.random() - 0.5) * 6,
-      y: mouse.y + (Math.random() - 0.5) * 6,
-      vx: (Math.random() - 0.5) * 0.6,
-      vy: (Math.random() - 0.5) * 0.6 - 0.2,
-      r: 1 + Math.random() * 2.5,
+      x: mouse.x + (Math.random() - 0.5) * 8,
+      y: mouse.y + (Math.random() - 0.5) * 8,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5 - 0.15,
+      r: 0.8 + Math.random() * 1.8,
       life: 1,
-      accent: Math.random() < 0.15
+      accent: Math.random() < 0.12
     })
   }
 }
@@ -42,13 +42,13 @@ function tick() {
     const p = parts[i]
     p.x += p.vx
     p.y += p.vy
-    p.vy += 0.03
-    p.life -= 0.015
+    p.vy += 0.02
+    p.life -= 0.018
     if (p.life <= 0) {
       parts.splice(i, 1)
       continue
     }
-    ctx.globalAlpha = p.life
+    ctx.globalAlpha = Math.max(0, p.life) * 0.55
     ctx.fillStyle = p.accent ? '#B68D73' : '#1A1816'
     ctx.beginPath()
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
@@ -59,39 +59,41 @@ function tick() {
   raf = requestAnimationFrame(tick)
 }
 
+function onMove(e) {
+  mouse.x = e.clientX
+  mouse.y = e.clientY
+  mouse.active = true
+}
+
+function onTouch(e) {
+  const t = e.touches[0]
+  mouse.x = t.clientX
+  mouse.y = t.clientY
+  mouse.active = true
+}
+
+function onLeave() {
+  mouse.active = false
+}
+
 onMounted(() => {
   resize()
-  const canvas = canvasRef.value
-  canvas.addEventListener('mousemove', (e) => {
-    const r = canvas.getBoundingClientRect()
-    mouse.x = e.clientX - r.left
-    mouse.y = e.clientY - r.top
-    mouse.active = true
-  })
-  canvas.addEventListener('mouseleave', () => {
-    mouse.active = false
-  })
-  canvas.addEventListener(
-    'touchmove',
-    (e) => {
-      const t = e.touches[0]
-      const r = canvas.getBoundingClientRect()
-      mouse.x = t.clientX - r.left
-      mouse.y = t.clientY - r.top
-      mouse.active = true
-    },
-    { passive: true }
-  )
-  tick()
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseout', onLeave)
+  window.addEventListener('touchmove', onTouch, { passive: true })
   window.addEventListener('resize', resize)
+  tick()
 })
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  window.removeEventListener('mousemove', onMove)
+  window.removeEventListener('mouseout', onLeave)
+  window.removeEventListener('touchmove', onTouch)
   window.removeEventListener('resize', resize)
 })
 </script>
 
 <template>
-  <canvas ref="canvasRef" class="fx-canvas"></canvas>
+  <canvas ref="canvasRef" class="fx-global"></canvas>
 </template>

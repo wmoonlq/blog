@@ -1,8 +1,11 @@
 <script setup>
 import BlogNav from './components/BlogNav.vue'
+import GlobalParticleTrail from './components/GlobalParticleTrail.vue'
+import { effects } from './stores/effects'
 </script>
 
 <template>
+  <GlobalParticleTrail v-if="effects.particleTrail" />
   <BlogNav />
   <main>
     <router-view />
