@@ -9,6 +9,11 @@ const router = createRouter({
       path: '/post/:slug',
       name: 'post',
       component: () => import('./views/PostView.vue')
+    },
+    {
+      path: '/workbench',
+      name: 'workbench',
+      component: () => import('./views/WorkbenchView.vue')
     }
   ]
 })
