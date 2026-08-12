@@ -90,15 +90,61 @@ img {
   color: var(--text);
 }
 
-.nav-link {
-  font-size: 14px;
-  color: var(--text-secondary);
+.nav-toggle {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+
+.nav-toggle:hover {
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.nav-drop {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-drop-link {
+  padding: 14px 4px;
+  font-size: 15px;
   letter-spacing: 0.04em;
+  color: var(--text);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   transition: color var(--transition);
 }
 
-.nav-link:hover {
+.nav-drop-link:last-child {
+  border-bottom: none;
+}
+
+.nav-drop-link:hover,
+.nav-drop-link.active {
   color: var(--accent);
+}
+
+.nav-drop-enter-active,
+.nav-drop-leave-active {
+  transition:
+    opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.nav-drop-enter-from,
+.nav-drop-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* ============================================================
@@ -383,11 +429,6 @@ img {
 /* ============================================================
    工作台 — 贪吃蛇
    ============================================================ */
-.nav-links {
-  display: flex;
-  gap: 24px;
-}
-
 .game-card {
   border: var(--border-card);
   border-radius: var(--radius);

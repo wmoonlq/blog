@@ -1,13 +1,53 @@
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+
+const open = ref(false)
+const route = useRoute()
+
+const items = [
+  { name: 'home', label: '文章' },
+  { name: 'notes', label: '随笔' },
+  { name: 'workbench', label: '工作台' },
+  { name: 'effects', label: '特效' }
+]
+
+function toggle() {
+  open.value = !open.value
+}
+
+function close() {
+  open.value = false
+}
+
+function onClickOutside(e) {
+  if (!e.target.closest('.nav')) close()
+}
+
+onMounted(() => document.addEventListener('click', onClickOutside))
+onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
+</script>
+
 <template>
   <header class="nav">
     <div class="nav-inner">
-      <router-link class="nav-brand" :to="{ name: 'home' }">wmoonlq · Blog</router-link>
-      <nav class="nav-links">
-        <router-link class="nav-link" :to="{ name: 'home' }">文章</router-link>
-        <router-link class="nav-link" :to="{ name: 'notes' }">随笔</router-link>
-        <router-link class="nav-link" :to="{ name: 'workbench' }">工作台</router-link>
-        <router-link class="nav-link" :to="{ name: 'effects' }">特效</router-link>
-      </nav>
+      <router-link class="nav-brand" :to="{ name: 'home' }" @click="close">wmoonlq · Blog</router-link>
+      <button class="nav-toggle" :aria-expanded="open" @click="toggle">
+        <span v-if="!open">☰</span>
+        <span v-else>✕</span>
+      </button>
     </div>
+    <transition name="nav-drop">
+      <nav v-if="open" class="nav-drop">
+        <router-link
+          v-for="item in items"
+          :key="item.name"
+          class="nav-drop-link"
+          :class="{ active: route.name === item.name }"
+          :to="{ name: item.name }"
+          @click="close"
+        >{{ item.label }}</router-link>
+      </nav>
+    </transition>
   </header>
 </template>
