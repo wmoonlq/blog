@@ -11,6 +11,7 @@ const files = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const message = ref('')
+const connStatus = ref('none')
 const editingSha = ref(null)
 const showAdvanced = ref(false)
 
@@ -51,21 +52,24 @@ function deb64(text) {
 async function saveToken() {
   localStorage.setItem('notes-token', token.value)
   message.value = ''
-  await loadFiles()
+  await checkConnection()
 }
 
-async function loadFiles() {
+async function checkConnection() {
   if (!token.value) return
   loading.value = true
   message.value = ''
+  connStatus.value = 'checking'
   try {
     const res = await fetch(`${API}/repos/${REPO}/contents/src/notes`, {
       headers: headers()
     })
     if (!res.ok) throw new Error(`连接失败（${res.status}），请检查 Token`)
     files.value = await res.json()
+    connStatus.value = 'ok'
   } catch (e) {
     message.value = e.message
+    connStatus.value = 'fail'
   } finally {
     loading.value = false
   }
@@ -130,7 +134,7 @@ async function save() {
     })
     if (!res.ok) throw new Error(`保存失败（${res.status}）`)
     message.value = '已提交到 GitHub，等待自动构建发布'
-    await loadFiles()
+    await checkConnection()
   } catch (e) {
     message.value = e.message
   } finally {
@@ -152,14 +156,14 @@ async function remove(name, sha) {
     })
     if (!res.ok) throw new Error(`删除失败（${res.status}）`)
     message.value = '已删除'
-    await loadFiles()
+    await checkConnection()
   } catch (e) {
     message.value = e.message
   }
 }
 
 onMounted(() => {
-  if (token.value) loadFiles()
+  if (token.value) checkConnection()
 })
 </script>
 
@@ -211,6 +215,11 @@ onMounted(() => {
           />
           <button class="btn" @click="saveToken">连接</button>
         </div>
+        <p v-if="connStatus !== 'none'" class="conn-status" :class="connStatus">
+          <template v-if="connStatus === 'checking'">正在连接…</template>
+          <template v-else-if="connStatus === 'ok'">✓ 连接成功，Token 有效</template>
+          <template v-else>✗ 连接失败，请检查 Token 是否正确</template>
+        </p>
         <p class="token-hint">
           建议创建仅限本仓库的 fine-grained Token（Contents 读写权限），访问
           github.com → Settings → Developer settings → Fine-grained tokens

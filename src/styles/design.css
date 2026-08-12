@@ -745,6 +745,23 @@ img {
   gap: 12px;
 }
 
+.conn-status {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.conn-status.checking {
+  color: var(--text-secondary);
+}
+
+.conn-status.ok {
+  color: var(--accent);
+}
+
+.conn-status.fail {
+  color: var(--text);
+}
+
 .advanced-toggle {
   border: none;
   background: transparent;
