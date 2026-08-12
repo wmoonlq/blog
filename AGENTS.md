@@ -7,6 +7,7 @@
 - 远端：https://github.com/wmoonlq/blog.git，默认分支 `main`
 - 本机直连 GitHub 超时，git 已配置代理 `http://127.0.0.1:7897`（仓库级 http.proxy）
 - GitHub API 调用（查 Actions、配 Pages 等）需走代理，凭据从 git credential 读取，勿打印 token
+- 用户提供的是 fine-grained PAT（仅限本仓库 Contents 读写），已存入 Windows 凭据管理器，同时用户浏览器 localStorage 各存一份；此 Token 永不进仓库
 
 ## 构建发布流程
 
@@ -30,5 +31,4 @@
 
 ## 编辑工具
 
-- 网页端随笔编辑器：https://wmoonlq.github.io/blog/#/notes/editor
-- 本地 `notes-token.txt`（已 gitignore）存有用户 GitHub Token（repo scope），可用于 API 操作；token 永不提交、不打印
+- 网页端随笔编辑器：https://wmoonlq.github.io/blog/#/notes/editor（首次需在高级选项中粘贴一次 Token，存于浏览器 localStorage，之后免粘贴）
