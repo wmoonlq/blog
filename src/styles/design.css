@@ -723,3 +723,154 @@ img {
 .note-content p {
   margin-bottom: 1.8em; /* > 行距 1.7em */
 }
+
+/* ============================================================
+   随笔编辑器
+   ============================================================ */
+.hero-btn {
+  display: inline-block;
+  margin-top: 24px;
+}
+
+.editor-card {
+  border: var(--border-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.token-row {
+  display: flex;
+  gap: 12px;
+}
+
+.token-input {
+  flex: 1;
+}
+
+.token-hint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.editor-msg {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.file-list {
+  margin-top: 16px;
+  border-top: 1px solid var(--divider);
+  padding-top: 8px;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.file-name {
+  flex: 1;
+  font-size: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color var(--transition);
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  resize: vertical;
+  min-height: 220px;
+  transition: border-color var(--transition);
+}
+
+.editor-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.editor-preview {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  min-height: 220px;
+  max-height: 480px;
+  overflow: auto;
+  font-size: 14px;
+}
+
+.editor-preview p {
+  margin-bottom: 1.8em; /* > 行距 1.7em */
+}
+
+.editor-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-sm {
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FBF9F6;
+}
+
+.btn-primary:hover {
+  color: #FBF9F6;
+  border-color: var(--accent);
+  opacity: 0.85;
+}
