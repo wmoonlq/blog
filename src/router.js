@@ -16,6 +16,11 @@ const router = createRouter({
       component: () => import('./views/NotesEditorView.vue')
     },
     {
+      path: '/posts/editor',
+      name: 'posts-editor',
+      component: () => import('./views/PostsEditorView.vue')
+    },
+    {
       path: '/post/:slug',
       name: 'post',
       component: () => import('./views/PostView.vue')

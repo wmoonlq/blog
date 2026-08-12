@@ -10,6 +10,7 @@ const posts = computed(() => getAllPosts())
     <header class="hero">
       <h1 class="hero-title">记录与思考</h1>
       <p class="hero-sub">关于前端、设计与技术的随笔</p>
+      <router-link class="btn hero-btn" :to="{ name: 'posts-editor' }">写文章</router-link>
     </header>
     <ul class="post-list">
       <li v-for="post in posts" :key="post.slug">
