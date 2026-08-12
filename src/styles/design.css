@@ -1,0 +1,359 @@
+/* ============================================================
+   Design Tokens — 强制锁定，勿改
+   ============================================================ */
+:root {
+  --bg: #FBF9F6;
+  --text: #1A1816;
+  --text-secondary: #5E554C;
+  --accent: #B68D73;
+  --divider: #EAE3DB;
+  --radius: 12px;
+  --shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.02);
+  --border-card: 1px solid rgba(0, 0, 0, 0.03);
+
+  --font-serif: "Noto Serif SC", "Source Serif 4", "Songti SC", "SimSun", serif;
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+
+  --container: 900px;
+  --line-height: 1.7;
+  --para-gap: 2em; /* 段间距 > 行间距(1.7em) */
+  --transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ============================================================
+   基础
+   ============================================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-weight: 350;
+  font-size: 16px;
+  line-height: var(--line-height);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  border-radius: var(--radius);
+}
+
+::selection {
+  background: rgba(182, 141, 115, 0.25);
+}
+
+/* ============================================================
+   导航 — backdrop blur
+   ============================================================ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(251, 249, 246, 0.82);
+  border-bottom: 1px solid var(--divider);
+}
+
+.nav-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.nav-link {
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  transition: color var(--transition);
+}
+
+.nav-link:hover {
+  color: var(--accent);
+}
+
+/* ============================================================
+   页面容器
+   ============================================================ */
+.page {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ============================================================
+   首页 — Hero 仅保留标题与一句副题，其余一律删除
+   ============================================================ */
+.hero {
+  padding: 88px 0 64px;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 44px;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+.hero-sub {
+  margin-top: 18px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   文章列表 — 卡片 + 左侧 2px 强调色竖线锚定
+   ============================================================ */
+.post-list {
+  list-style: none;
+  padding-bottom: 24px;
+}
+
+.post-card {
+  display: block;
+  border: var(--border-card);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.post-date {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.post-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.post-tags {
+  margin-top: 14px;
+}
+
+.post-tags span {
+  display: inline-block;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  padding: 3px 12px;
+  margin-right: 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   文章详情
+   ============================================================ */
+.back {
+  display: inline-block;
+  margin: 48px 0 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.back:hover {
+  color: var(--accent);
+}
+
+.article-head {
+  padding: 56px 0 40px;
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.article-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 34px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+.article-meta {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.article-tag {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+/* ============================================================
+   正文排版 — 行距 1.7，段间距 2em 恒大于行距；首行无缩进
+   ============================================================ */
+.prose {
+  font-size: 16px;
+  line-height: var(--line-height);
+  padding-bottom: 40px;
+}
+
+.prose p {
+  margin: 0 0 var(--para-gap);
+  text-indent: 0;
+}
+
+.prose h2 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  margin: 3em 0 1.2em;
+}
+
+.prose h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  margin: 2.6em 0 1.1em;
+}
+
+.prose a {
+  color: var(--accent);
+  border-bottom: 1px solid rgba(182, 141, 115, 0.35);
+  transition: border-color var(--transition);
+}
+
+.prose a:hover {
+  border-color: var(--accent);
+}
+
+.prose ul,
+.prose ol {
+  margin: 0 0 var(--para-gap);
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-bottom: 0.7em;
+}
+
+.prose blockquote {
+  margin: 0 0 var(--para-gap);
+  padding: 4px 0 4px 1.2em;
+  border-left: 2px solid var(--accent);
+  color: var(--text-secondary);
+}
+
+.prose blockquote p {
+  margin-bottom: 0;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 3.5em 0;
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: rgba(26, 24, 22, 0.05);
+  border-radius: var(--radius);
+  padding: 0.15em 0.5em;
+}
+
+.prose pre {
+  background: rgba(26, 24, 22, 0.035);
+  border: var(--border-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
+  margin: 0 0 var(--para-gap);
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.85em;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 var(--para-gap);
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--divider);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.prose th {
+  font-weight: 500;
+}
+
+/* ============================================================
+   页脚
+   ============================================================ */
+.footer {
+  max-width: var(--container);
+  margin: 48px auto 0;
+  padding: 32px 24px;
+  border-top: 1px solid var(--divider);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+/* 硬约束：凡不服务于排版节奏或负空间的元素，一律不保留 */
