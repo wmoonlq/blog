@@ -6,6 +6,7 @@ import { user, setNickname } from '../stores/user'
 import { checkPassword, getToken, fileToBase64Worker, terminateWorker, uploadFileXhr } from '../utils/githubFiles'
 
 const open = ref(false)
+const page = ref('') // '' | 'appearance' | 'background' | 'effects' | 'profile'
 const bgInput = ref(settings.background)
 
 const pwd = ref('')
@@ -18,11 +19,21 @@ const phase = ref('')
 
 function openPanel() {
   open.value = true
+  page.value = ''
   bgInput.value = settings.background
 }
 
 function closePanel() {
   open.value = false
+  page.value = ''
+}
+
+function goPage(name) {
+  page.value = name
+}
+
+function goHome() {
+  page.value = ''
 }
 
 function onClickOutside(e) {
@@ -140,12 +151,37 @@ async function uploadBg() {
     <transition name="nav-drop">
       <div v-if="open" class="settings-drop" role="dialog" aria-label="设置" @click.stop>
         <div class="settings-head">
-          <h2 class="settings-title">设置</h2>
+          <button v-if="page" class="settings-back" aria-label="返回" @click="goHome">←</button>
+          <h2 class="settings-title">{{ page === 'appearance' ? '外观' : page === 'background' ? '背景图片' : page === 'effects' ? '特效' : page === 'profile' ? '我的身份' : '设置' }}</h2>
         </div>
 
-        <div class="settings-scroll">
+        <!-- 一级菜单 -->
+        <div v-if="!page" class="settings-menu">
+          <button class="settings-item" @click="goPage('appearance')">
+            <span class="settings-item-name">外观</span>
+            <span class="settings-item-desc">{{ settings.theme === 'dark' ? '暗色模式：开' : '暗色模式：关' }}</span>
+            <span class="settings-item-arrow">›</span>
+          </button>
+          <button class="settings-item" @click="goPage('background')">
+            <span class="settings-item-name">背景图片</span>
+            <span class="settings-item-desc">{{ settings.background ? '已设置' : '未设置' }}</span>
+            <span class="settings-item-arrow">›</span>
+          </button>
+          <button class="settings-item" @click="goPage('effects')">
+            <span class="settings-item-name">特效</span>
+            <span class="settings-item-desc">{{ effects.particleTrail ? '粒子轨迹：开' : '粒子轨迹：关' }}</span>
+            <span class="settings-item-arrow">›</span>
+          </button>
+          <button class="settings-item" @click="goPage('profile')">
+            <span class="settings-item-name">我的身份</span>
+            <span class="settings-item-desc">{{ user.nickname || '未设置昵称' }}</span>
+            <span class="settings-item-arrow">›</span>
+          </button>
+        </div>
+
+        <!-- 外观 -->
+        <div v-else-if="page === 'appearance'" class="settings-scroll">
           <section class="settings-sec">
-            <h3 class="settings-sec-title">外观</h3>
             <div class="switch-row">
               <span class="switch-label">暗色模式</span>
               <button
@@ -156,7 +192,10 @@ async function uploadBg() {
               ></button>
             </div>
           </section>
+        </div>
 
+        <!-- 背景图片 -->
+        <div v-else-if="page === 'background'" class="settings-scroll">
           <section class="settings-sec">
             <h3 class="settings-sec-title">背景图片</h3>
             <p class="settings-hint">全站背景，个人设置仅对本机生效</p>
@@ -192,9 +231,11 @@ async function uploadBg() {
             </div>
             <p v-if="uploadMsg" class="editor-msg">{{ uploadMsg }}</p>
           </section>
+        </div>
 
+        <!-- 特效 -->
+        <div v-else-if="page === 'effects'" class="settings-scroll">
           <section class="settings-sec">
-            <h3 class="settings-sec-title">特效</h3>
             <div class="switch-row">
               <span class="switch-label">粒子轨迹（全站）</span>
               <button
@@ -205,7 +246,10 @@ async function uploadBg() {
               ></button>
             </div>
           </section>
+        </div>
 
+        <!-- 我的身份 -->
+        <div v-else-if="page === 'profile'" class="settings-scroll">
           <section class="settings-sec">
             <h3 class="settings-sec-title">我的身份</h3>
             <p class="settings-hint">上传记录将带此标识，用于多用户区分</p>
