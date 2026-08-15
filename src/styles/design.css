@@ -3594,6 +3594,9 @@ img {
   .mp-body {
     grid-template-columns: 1fr;
   }
+  .mp-lyrics {
+    max-height: 220px;
+  }
 }
 
 .mp-left {
@@ -3631,16 +3634,17 @@ img {
 .mp-right {
   display: flex;
   flex-direction: column;
-  min-height: 300px;
+  min-height: 0;
 }
 
 .mp-lyrics {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 40px 4px;
+  padding: 12px 4px;
   text-align: center;
   scroll-behavior: smooth;
+  max-height: 260px;
 }
 
 .mp-lyrics::-webkit-scrollbar {
