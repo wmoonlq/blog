@@ -3159,3 +3159,39 @@ img {
   gap: 10px;
   margin-top: 12px;
 }
+
+
+.bg-upload {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--divider);
+}
+
+.bg-upload-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.bg-file-input {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.bg-file-input::file-selector-button {
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: transparent;
+  padding: 4px 12px;
+  margin-right: 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.bg-file-input::file-selector-button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}

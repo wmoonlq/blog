@@ -32,6 +32,100 @@ function clearBackground() {
   setBackground('')
 }
 
+// ============ 背景图上传 ============
+const REPO = 'wmoonlq/blog'
+const API = 'https://api.github.com'
+const UPLOAD_PWD = '123456'
+const TOKEN_KEY = 'notes-token'
+
+const pwd = ref('')
+const bgFile = ref(null)
+const uploading = ref(false)
+const uploadMsg = ref('')
+
+function pickFile(e) {
+  bgFile.value = e.target.files[0] || null
+  uploadMsg.value = ''
+}
+
+function fillPwd() {
+  pwd.value = UPLOAD_PWD
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => {
+      const dataUrl = r.result
+      const idx = dataUrl.indexOf(',')
+      resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl)
+    }
+    r.onerror = () => reject(new Error('读取文件失败'))
+    r.readAsDataURL(file)
+  })
+}
+
+async function uploadBg() {
+  uploadMsg.value = ''
+  if (!bgFile.value) {
+    uploadMsg.value = '请先选择图片'
+    return
+  }
+  if (pwd.value !== UPLOAD_PWD) {
+    uploadMsg.value = '上传密码不正确'
+    return
+  }
+  const file = bgFile.value
+  if (file.size > 5 * 1024 * 1024) {
+    uploadMsg.value = '图片不能超过 5MB'
+    return
+  }
+  const token = localStorage.getItem(TOKEN_KEY) || ''
+  if (!token) {
+    uploadMsg.value = '需要 GitHub Token（与随笔编辑器共用，可前往随笔页填写）'
+    return
+  }
+
+  uploading.value = true
+  try {
+    const ext = (file.name.match(/\.(png|jpe?g|webp|gif|avif)$/i) || ['.jpg'])[0]
+    const name = `bg-${Date.now()}${ext}`
+    const content = await fileToBase64(file)
+    const res = await fetch(`${API}/repos/${REPO}/contents/public/bg/${name}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        message: `feat: upload blog background ${name}`,
+        content
+      })
+    })
+    if (!res.ok) {
+      let detail = ''
+      try {
+        detail = (await res.json()).message || ''
+      } catch {
+        /* ignore */
+      }
+      throw new Error(`上传失败（${res.status}）${detail ? `：${detail}` : ''}`)
+    }
+    setBackground(`/blog/bg/${name}`)
+    bgInput.value = `/blog/bg/${name}`
+    uploadMsg.value = '上传成功，背景已应用'
+    pwd.value = ''
+    bgFile.value = null
+    e && e.target && (e.target.value = '')
+  } catch (err) {
+    uploadMsg.value = err.message
+  } finally {
+    uploading.value = false
+  }
+}
+
 const effectsList = [
   { title: '打字机', sub: '逐字敲出，光标闪烁', component: TypewriterEffect },
   { title: '字符雨', sub: '单色字符垂直坠落', component: CharRainEffect, canvas: true },
@@ -96,6 +190,34 @@ const effectsList = [
             <p class="token-hint">
               全站背景将显示该图片，正文区域自动加遮罩保持可读；设置保存在本地。
             </p>
+            <div class="bg-upload">
+              <div class="switch-row">
+                <span class="switch-label">上传背景图到 GitHub</span>
+              </div>
+              <div class="bg-upload-row">
+                <input
+                  class="input bg-file-input"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                  @change="pickFile"
+                />
+              </div>
+              <div class="bg-upload-row">
+                <input
+                  v-model="pwd"
+                  class="input"
+                  type="password"
+                  placeholder="上传密码"
+                  @keydown.enter="uploadBg"
+                />
+                <button class="btn btn-sm" @click="fillPwd">一键填充</button>
+                <button class="btn btn-sm" :disabled="uploading" @click="uploadBg">
+                  {{ uploading ? '上传中…' : '上传' }}
+                </button>
+              </div>
+              <p class="token-hint">上传需密码校验（防止人机刷取）；图片保存至仓库 <code>public/bg/</code>，上限 5MB。</p>
+              <p v-if="uploadMsg" class="editor-msg">{{ uploadMsg }}</p>
+            </div>
           </div>
         </div>
       </section>
