@@ -12,6 +12,7 @@ const items = [
   { name: 'home', label: '文章' },
   { name: 'notes', label: '随笔' },
   { name: 'videos', label: '视频' },
+  { name: 'music', label: '音乐' },
   { name: 'tags', label: '标签' },
   { name: 'timeline', label: '时间线' },
   { name: 'workbench', label: '工作台' },

@@ -4,10 +4,17 @@ import { getAllVideos, isBilibili } from '../utils/videos'
 import { renderMarkdown } from '../utils/markdown'
 import VideoPlayer from '../components/VideoPlayer.vue'
 import VideoThumb from '../components/VideoThumb.vue'
+import MediaManager from '../components/MediaManager.vue'
+import { checkPassword, getToken, deleteFile } from '../utils/githubFiles'
 
 const videos = computed(() => getAllVideos())
 const active = ref(null)
 const activeCategory = ref('')
+const showUpload = ref(false)
+const showManage = ref(false)
+const deleting = ref(null) // 待删除的视频
+const deletePwd = ref('')
+const deleteMsg = ref('')
 
 const categories = computed(() => {
   const map = new Map()
@@ -43,6 +50,42 @@ async function play(video) {
 function isEmbed(v) {
   return isBilibili(v.source) || v.type === 'embed'
 }
+
+function startDelete(v) {
+  deleting.value = v
+  deletePwd.value = ''
+  deleteMsg.value = ''
+}
+
+function cancelDelete() {
+  deleting.value = null
+}
+
+async function confirmDelete() {
+  if (!deleting.value) return
+  deleteMsg.value = ''
+  if (!checkPassword(deletePwd.value)) {
+    deleteMsg.value = '操作密码不正确'
+    return
+  }
+  const token = getToken()
+  if (!token) {
+    deleteMsg.value = '需要 GitHub Token（与随笔编辑器共用）'
+    return
+  }
+  if (!window.confirm(`确认删除「${deleting.value.title}」？该操作会同时删除视频文件和元数据。`)) return
+
+  try {
+    // 从 source 推导 public 文件路径：/blog/videos/xxx.mp4 → public/videos/xxx.mp4
+    const filePath = `public/videos/${deleting.value.source.split('/').pop()}`
+    await deleteFile(filePath, `docs: delete video ${deleting.value.slug}`, token)
+    await deleteFile(`src/videos/${deleting.value.slug}.md`, `docs: delete video meta ${deleting.value.slug}`, token)
+    deleteMsg.value = '已删除，等待自动构建发布后刷新生效'
+    deleting.value = null
+  } catch (e) {
+    deleteMsg.value = e.message
+  }
+}
 </script>
 
 <template>
@@ -50,7 +93,44 @@ function isEmbed(v) {
     <header class="hero">
       <h1 class="hero-title">视频</h1>
       <p class="hero-sub">影像与声音的合集 · {{ videos.length }} 个</p>
+      <div class="hero-actions">
+        <button class="btn hero-btn" @click="showUpload = !showUpload">
+          {{ showUpload ? '收起上传' : '上传视频' }}
+        </button>
+        <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
+          {{ showManage ? '退出管理' : '管理' }}
+        </button>
+      </div>
     </header>
+
+    <MediaManager
+      v-if="showUpload"
+      kind="video"
+      media-dir="public/videos"
+      meta-dir="src/videos"
+      accept="video/mp4,video/webm,video/ogg"
+      :max-mb="50"
+      style="margin-bottom: 32px"
+    />
+
+    <!-- 删除确认条 -->
+    <div v-if="deleting" class="delete-bar">
+      <div class="delete-bar-main">
+        <p class="delete-bar-title">删除「{{ deleting.title }}」</p>
+        <p class="delete-bar-sub">将删除视频文件与元数据，需要操作密码</p>
+      </div>
+      <input
+        v-model="deletePwd"
+        class="input delete-pwd"
+        type="password"
+        placeholder="操作密码"
+        @keydown.enter="confirmDelete"
+      />
+      <button class="btn btn-sm" @click="deletePwd = '123456'">一键填充</button>
+      <button class="btn btn-sm btn-danger" @click="confirmDelete">确认删除</button>
+      <button class="btn btn-sm" @click="cancelDelete">取消</button>
+      <p v-if="deleteMsg" class="editor-msg">{{ deleteMsg }}</p>
+    </div>
 
     <div v-if="categories.length" class="video-cats">
       <button
@@ -89,9 +169,10 @@ function isEmbed(v) {
             :key="v.slug"
             class="video-card"
             :class="{ on: active && active.slug === v.slug }"
-            @click="play(v)"
+            @click="showManage ? startDelete(v) : play(v)"
           >
             <VideoThumb :source="v.source" :poster="v.poster" :embed="isEmbed(v)" />
+            <span v-if="showManage" class="video-card-del">✕ 删除</span>
             <span class="video-card-title">{{ v.title }}</span>
             <span class="video-card-date">{{ v.date }}</span>
           </button>
