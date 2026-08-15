@@ -1,8 +1,0 @@
----
-title: "辛特尔"
-date: "2026-08-15"
-source: "/blog/videos/sintel.mp4"
-type: "video"
----
-
-Blender 开源动画短片《Sintel》片段，来自 Test Videos 的免费样片。

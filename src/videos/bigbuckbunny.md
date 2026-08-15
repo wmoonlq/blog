@@ -5,4 +5,4 @@ source: "/blog/videos/bigbuckbunny.mp4"
 type: "video"
 ---
 
-Blender 开源动画短片《Big Buck Bunny》片段，来自 Test Videos 的免费样片。
+Blender 开源动画短片《Big Buck Bunny》片段，带声音。
