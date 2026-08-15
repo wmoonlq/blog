@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMediaQuery } from '../utils/media'
-import { settings, toggleTheme } from '../stores/settings'
+import SettingsPanel from './SettingsPanel.vue'
 
 const open = ref(false)
 const route = useRoute()
@@ -44,6 +44,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 function openSearch() {
   document.dispatchEvent(new CustomEvent('open-search'))
 }
+
+function openSettings() {
+  document.dispatchEvent(new CustomEvent('open-settings'))
+}
 </script>
 
 <template>
@@ -59,9 +63,7 @@ function openSearch() {
           :to="{ name: item.name }"
         >{{ item.label }}</router-link>
         <button class="nav-search" aria-label="搜索" @click="openSearch">⌕</button>
-        <button class="theme-toggle nav-theme" :aria-pressed="settings.theme === 'dark'" @click="toggleTheme">
-          {{ settings.theme === 'light' ? '☾' : '☀' }}
-        </button>
+        <SettingsPanel />
       </nav>
       <button v-else class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
         <span v-if="!open">☰</span>
@@ -79,9 +81,7 @@ function openSearch() {
           @click="close"
         >{{ item.label }}</router-link>
         <button class="nav-drop-link nav-drop-search" @click="close; openSearch()">⌕ 搜索</button>
-        <button class="nav-drop-link nav-drop-theme" @click="toggleTheme">
-          {{ settings.theme === 'light' ? '☾ 暗色模式' : '☀ 亮色模式' }}
-        </button>
+        <button class="nav-drop-link nav-drop-theme" @click="close; openSettings()">⚙ 设置</button>
       </nav>
     </transition>
   </header>

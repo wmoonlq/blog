@@ -18,7 +18,7 @@ const index = ref(0)
 const current = ref(0)
 const duration = ref(0)
 const volume = ref(0.8)
-const mode = ref('list') // list | loop | random
+const mode = ref('order') // order | list | loop | random
 const showList = ref(false)
 const lyrics = ref([])
 const yrcLines = ref([])
@@ -47,7 +47,7 @@ function trackAdjustKey() {
 
 const track = computed(() => props.tracks[index.value] || null)
 const progress = computed(() => (duration.value ? (current.value / duration.value) * 100 : 0))
-const modeLabel = computed(() => ({ list: '列表', loop: '单曲', random: '随机' }[mode.value]))
+const modeLabel = computed(() => ({ order: '顺序', list: '列表循环', loop: '单曲循环', random: '随机' }[mode.value]))
 
 function fmt(s) {
   if (!isFinite(s) || s < 0) s = 0
@@ -107,7 +107,18 @@ function onEnded() {
   if (mode.value === 'loop') {
     audioRef.value.currentTime = 0
     audioRef.value.play()
-  } else if (index.value >= props.tracks.length - 1) {
+    return
+  }
+  if (mode.value === 'list') {
+    playIndex(index.value + 1) // 循环回第一首
+    return
+  }
+  if (mode.value === 'random') {
+    next()
+    return
+  }
+  // order：播完最后一首停止
+  if (index.value >= props.tracks.length - 1) {
     playing.value = false
   } else {
     next()
