@@ -3195,3 +3195,19 @@ img {
   color: var(--accent);
   border-color: var(--accent);
 }
+
+
+.bg-preview {
+  margin-top: 12px;
+  border: var(--border-card);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.bg-preview img {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 0;
+}

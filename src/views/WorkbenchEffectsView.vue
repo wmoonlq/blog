@@ -19,7 +19,7 @@ import AntiGravityEffect from '../components/effects/AntiGravityEffect.vue'
 import ParticleRose from '../components/effects/ParticleRose.vue'
 import { effects, toggleParticleTrail } from '../stores/effects'
 import { settings, setBackground } from '../stores/settings'
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const bgInput = ref(settings.background)
 
@@ -40,13 +40,44 @@ const TOKEN_KEY = 'notes-token'
 
 const pwd = ref('')
 const bgFile = ref(null)
+const bgPreview = ref('')
 const uploading = ref(false)
 const uploadMsg = ref('')
 
-function pickFile(e) {
-  bgFile.value = e.target.files[0] || null
+function setBgFile(file) {
+  bgFile.value = file
   uploadMsg.value = ''
+  if (bgPreview.value) URL.revokeObjectURL(bgPreview.value)
+  bgPreview.value = file ? URL.createObjectURL(file) : ''
 }
+
+function pickFile(e) {
+  setBgFile(e.target.files[0] || null)
+}
+
+function onPaste(e) {
+  const items = e.clipboardData && e.clipboardData.items
+  if (!items) return
+  for (const it of items) {
+    if (it.type && it.type.startsWith('image/')) {
+      const file = it.getAsFile()
+      if (file) {
+        e.preventDefault()
+        const name = file.name || `clipboard-${Date.now()}.png`
+        const renamed = new File([file], name, { type: file.type })
+        setBgFile(renamed)
+        uploadMsg.value = `已粘贴截图：${name}（${(file.size / 1024).toFixed(0)} KB）`
+      }
+      break
+    }
+  }
+}
+
+onMounted(() => document.addEventListener('paste', onPaste))
+onBeforeUnmount(() => {
+  document.removeEventListener('paste', onPaste)
+  if (bgPreview.value) URL.revokeObjectURL(bgPreview.value)
+})
 
 function fillPwd() {
   pwd.value = UPLOAD_PWD
@@ -190,34 +221,38 @@ const effectsList = [
             <p class="token-hint">
               全站背景将显示该图片，正文区域自动加遮罩保持可读；设置保存在本地。
             </p>
-            <div class="bg-upload">
-              <div class="switch-row">
-                <span class="switch-label">上传背景图到 GitHub</span>
+              <div class="bg-upload">
+                <div class="switch-row">
+                  <span class="switch-label">上传背景图到 GitHub</span>
+                </div>
+                <div class="bg-upload-row">
+                  <input
+                    class="input bg-file-input"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                    @change="pickFile"
+                  />
+                </div>
+                <p class="token-hint">也可以直接 <b>Ctrl / ⌘ + V</b> 粘贴截图（无需选文件）。</p>
+                <div v-if="bgPreview" class="bg-preview">
+                  <img :src="bgPreview" alt="背景预览" />
+                </div>
+                <div class="bg-upload-row">
+                  <input
+                    v-model="pwd"
+                    class="input"
+                    type="password"
+                    placeholder="上传密码"
+                    @keydown.enter="uploadBg"
+                  />
+                  <button class="btn btn-sm" @click="fillPwd">一键填充</button>
+                  <button class="btn btn-sm" :disabled="uploading" @click="uploadBg">
+                    {{ uploading ? '上传中…' : '上传' }}
+                  </button>
+                </div>
+                <p class="token-hint">上传需密码校验（防止人机刷取）；图片保存至仓库 <code>public/bg/</code>，上限 5MB。</p>
+                <p v-if="uploadMsg" class="editor-msg">{{ uploadMsg }}</p>
               </div>
-              <div class="bg-upload-row">
-                <input
-                  class="input bg-file-input"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
-                  @change="pickFile"
-                />
-              </div>
-              <div class="bg-upload-row">
-                <input
-                  v-model="pwd"
-                  class="input"
-                  type="password"
-                  placeholder="上传密码"
-                  @keydown.enter="uploadBg"
-                />
-                <button class="btn btn-sm" @click="fillPwd">一键填充</button>
-                <button class="btn btn-sm" :disabled="uploading" @click="uploadBg">
-                  {{ uploading ? '上传中…' : '上传' }}
-                </button>
-              </div>
-              <p class="token-hint">上传需密码校验（防止人机刷取）；图片保存至仓库 <code>public/bg/</code>，上限 5MB。</p>
-              <p v-if="uploadMsg" class="editor-msg">{{ uploadMsg }}</p>
-            </div>
           </div>
         </div>
       </section>
