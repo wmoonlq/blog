@@ -10,33 +10,18 @@ const LIFT = 0.14
 const RADIAL = 0.1
 const SPRING = 0.06
 const DAMP = 0.9
-const GROUND_Y = -1.3
-const FLOOR = 3.6
 
 // 共享鼠标状态（NDC 坐标），由事件层写入、渲染循环读取
 const pointerState = { x: 0, y: 0, active: false }
 
 const el = useThree(({ scene, camera }, state) => {
-  camera.position.set(5.5, 5, 7.5)
+  camera.position.set(0, 1.2, 8)
   camera.lookAt(0, 0, 0)
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.6))
   const dir = new THREE.DirectionalLight(0xffffff, 1.0)
   dir.position.set(4, 6, 5)
   scene.add(dir)
-
-  // ---- 地面圆环 ----
-  const ringGeo = new THREE.RingGeometry(FLOOR - 0.02, FLOOR, 64)
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: 0xEAE3DB,
-    transparent: true,
-    opacity: 0.5,
-    side: THREE.DoubleSide
-  })
-  const ring = new THREE.Mesh(ringGeo, ringMat)
-  ring.rotation.x = -Math.PI / 2
-  ring.position.y = GROUND_Y
-  scene.add(ring)
 
   // ---- 方块实例 ----
   const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3)
@@ -47,15 +32,23 @@ const el = useThree(({ scene, camera }, state) => {
   const velocities = new Float32Array(COUNT * 3)
   const spins = new Float32Array(COUNT * 3)
   const spinTargets = new Float32Array(COUNT * 3)
+  const phases = new Float32Array(COUNT) // 漂浮相位
+  const driftX = new Float32Array(COUNT) // 漂移幅度/速度
+  const driftZ = new Float32Array(COUNT)
   const accentFlags = new Uint8Array(COUNT)
 
+  // 悬浮轨道：分布在立方体空间内，带漂浮参数
+  const SPAN = 3.4
   for (let i = 0; i < COUNT; i++) {
-    homes[i * 3] = (Math.random() - 0.5) * FLOOR * 2
-    homes[i * 3 + 1] = GROUND_Y + 0.15
-    homes[i * 3 + 2] = (Math.random() - 0.5) * FLOOR * 2
+    homes[i * 3] = (Math.random() - 0.5) * SPAN * 2
+    homes[i * 3 + 1] = (Math.random() - 0.5) * SPAN
+    homes[i * 3 + 2] = (Math.random() - 0.5) * SPAN * 2
     positions[i * 3] = homes[i * 3]
-    positions[i * 3 + 1] = GROUND_Y + 3 + Math.random() * 2
+    positions[i * 3 + 1] = homes[i * 3 + 1]
     positions[i * 3 + 2] = homes[i * 3 + 2]
+    phases[i] = Math.random() * Math.PI * 2
+    driftX[i] = 0.15 + Math.random() * 0.3
+    driftZ[i] = 0.15 + Math.random() * 0.3
     accentFlags[i] = Math.random() < 0.38 ? 1 : 0
   }
 
@@ -110,8 +103,14 @@ const el = useThree(({ scene, camera }, state) => {
 
       for (let i = 0; i < COUNT; i++) {
         const i3 = i * 3
-        const hx = homes[i3] * breathe
-        const hz = homes[i3 + 2] * breathe
+        // 漂浮目标：home + 正弦浮动/漂移
+        const ph = phases[i]
+        const f1 = Math.sin(t * 0.5 + ph)
+        const f2 = Math.sin(t * 0.34 + ph * 1.7)
+        const f3 = Math.cos(t * 0.42 + ph * 0.9)
+        const tx = homes[i3] * breathe + f1 * driftX[i]
+        const tz = homes[i3 + 2] * breathe + f2 * driftZ[i]
+        const ty = homes[i3 + 1] + f3 * 0.22
 
         const dxm = mx - positions[i3]
         const dzm = mz - positions[i3 + 2]
@@ -120,17 +119,17 @@ const el = useThree(({ scene, camera }, state) => {
 
         if (dm < FIELD_R && dm > 0.001) {
           const f = 1 - dm / FIELD_R
-          // 反重力：举起 + 径向散开
-          velocities[i3 + 1] += LIFT * f
+          // 反重力：推开 + 上浮 + 扰乱
           velocities[i3] += (dxm / dm) * RADIAL * f
           velocities[i3 + 2] += (dzm / dm) * RADIAL * f
+          velocities[i3 + 1] += LIFT * f
           lifted = true
         }
 
-        // 弹簧回 home
-        velocities[i3] += (hx - positions[i3]) * SPRING
-        velocities[i3 + 1] += (homes[i3 + 1] - positions[i3 + 1]) * SPRING
-        velocities[i3 + 2] += (hz - positions[i3 + 2]) * SPRING
+        // 弹簧回漂浮轨道
+        velocities[i3] += (tx - positions[i3]) * SPRING
+        velocities[i3 + 1] += (ty - positions[i3 + 1]) * SPRING
+        velocities[i3 + 2] += (tz - positions[i3 + 2]) * SPRING
         velocities[i3] *= DAMP
         velocities[i3 + 1] *= DAMP
         velocities[i3 + 2] *= DAMP
@@ -138,15 +137,16 @@ const el = useThree(({ scene, camera }, state) => {
         positions[i3 + 1] += velocities[i3 + 1]
         positions[i3 + 2] += velocities[i3 + 2]
 
-        // 举起时乱转，落回后归位
+        // 举起时乱转，回轨后缓慢自转（漂浮感）
         if (lifted && Math.random() < 0.08) {
-          spinTargets[i3] = (Math.random() - 0.5) * 2.6
-          spinTargets[i3 + 1] = (Math.random() - 0.5) * 2.6
-          spinTargets[i3 + 2] = (Math.random() - 0.5) * 2.6
+          spinTargets[i3] = (Math.random() - 0.5) * 3
+          spinTargets[i3 + 1] = (Math.random() - 0.5) * 3
+          spinTargets[i3 + 2] = (Math.random() - 0.5) * 3
         } else if (!lifted) {
-          spinTargets[i3] *= 0.97
-          spinTargets[i3 + 1] *= 0.97
-          spinTargets[i3 + 2] *= 0.97
+          // 常态：微幅慢转
+          spinTargets[i3] = Math.sin(t * 0.3 + ph) * 0.25
+          spinTargets[i3 + 1] = Math.cos(t * 0.26 + ph * 1.3) * 0.25
+          spinTargets[i3 + 2] = Math.sin(t * 0.22 + ph * 0.7) * 0.25
         }
         spins[i3] += (spinTargets[i3] - spins[i3]) * 0.14
         spins[i3 + 1] += (spinTargets[i3 + 1] - spins[i3 + 1]) * 0.14
