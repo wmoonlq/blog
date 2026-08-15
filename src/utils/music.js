@@ -18,6 +18,7 @@ export function getAllMusic() {
         source: data.source || '',
         cover: data.cover || '',
         lyrics: data.lyrics || '',
+        yrc: data.yrc || '',
         content
       }
     })

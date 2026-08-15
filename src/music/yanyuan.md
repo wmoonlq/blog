@@ -4,6 +4,7 @@ artist: "薛之谦"
 date: "2026-08-16"
 source: "/blog/music/yanyuan.flac"
 lyrics: "/blog/music/yanyuan.lrc"
+yrc: "/blog/music/yanyuan.yrc"
 type: "music"
 ---
 

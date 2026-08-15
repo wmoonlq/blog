@@ -32,3 +32,48 @@ export function findLyricIndex(lines, time) {
   }
   return idx
 }
+
+/* ============ YRC 逐字歌词（网易云卡拉OK格式） ============
+   行格式: [行开始ms,行时长ms](字开始ms,字时长ms,字后间隔ms)字(...)字...
+   例: [21110,1660](21110,370,0)简(21480,340,0)单(21820,950,0)点
+*/
+
+export function parseYRC(text) {
+  const lines = []
+  for (const raw of String(text || '').split('\n')) {
+    const head = raw.match(/^\[(\d+),(\d+)\]\s*(.*)$/)
+    if (!head) continue
+    const lineStart = parseInt(head[1], 10) / 1000
+    const rest = head[3]
+    const chars = []
+    const re = /\((\d+),(\d+),(\d+)\)(.)/g
+    let m
+    while ((m = re.exec(rest))) {
+      chars.push({
+        start: parseInt(m[1], 10) / 1000,
+        end: (parseInt(m[1], 10) + parseInt(m[2], 10)) / 1000,
+        char: m[3]
+      })
+    }
+    // 过滤元数据行（如"作词 : 薛之谦"，只有 1 个时间戳组且字符为空格）
+    if (!chars.length) continue
+    if (chars.length === 1 && chars[0].char === ' ') continue
+    lines.push({
+      time: lineStart,
+      chars,
+      text: chars.map((c) => c.char).join('')
+    })
+  }
+  lines.sort((a, b) => a.time - b.time)
+  return lines
+}
+
+export function findCharIndex(line, time) {
+  let idx = -1
+  if (!line) return idx
+  for (let i = 0; i < line.chars.length; i++) {
+    if (line.chars[i].start <= time) idx = i
+    else break
+  }
+  return idx
+}

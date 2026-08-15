@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { parseLRC, findLyricIndex } from '../utils/lrc'
+import { parseLRC, findLyricIndex, parseYRC, findCharIndex } from '../utils/lrc'
 
 const props = defineProps({
   tracks: { type: Array, required: true }
@@ -9,6 +9,8 @@ const props = defineProps({
 const audioRef = ref(null)
 const lyricBoxRef = ref(null)
 const lyricItemRefs = ref([])
+const yrcBoxRef = ref(null)
+const yrcItemRefs = ref([])
 const canvasRef = ref(null)
 
 const playing = ref(false)
@@ -19,6 +21,8 @@ const volume = ref(0.8)
 const mode = ref('list') // list | loop | random
 const showList = ref(false)
 const lyrics = ref([])
+const yrcLines = ref([])
+const karaoke = ref(false)
 const lrcOffset = ref(0) // LRC 文件内 [offset:] 标签
 const adjust = ref(0) // 用户手动校准偏移（秒）
 const lyricIndex = ref(-1)
@@ -127,6 +131,7 @@ async function loadLyrics() {
   if (!t || !t.lyrics) {
     lyrics.value = []
     lrcOffset.value = 0
+    yrcLines.value = []
     return
   }
   try {
@@ -139,6 +144,19 @@ async function loadLyrics() {
   } catch {
     lyrics.value = []
     lrcOffset.value = 0
+  }
+  // 逐字 yrc（可选）
+  if (t.yrc) {
+    try {
+      const res = await fetch(t.yrc)
+      if (res.ok) {
+        yrcLines.value = parseYRC(await res.text())
+      }
+    } catch {
+      yrcLines.value = []
+    }
+  } else {
+    yrcLines.value = []
   }
 }
 
@@ -155,6 +173,40 @@ function resetAdjust() {
 
 function effectiveTime() {
   return current.value + adjust.value + lrcOffset.value
+}
+
+// ---- 逐字卡拉OK ----
+const kLine = ref(-1)
+const kChar = ref(-1)
+
+function charState(lineIdx, charIdx) {
+  if (lineIdx < kLine.value) return 'done'
+  if (lineIdx > kLine.value) return 'todo'
+  if (charIdx < kChar.value) return 'done'
+  if (charIdx === kChar.value) return 'now'
+  return 'todo'
+}
+
+function updateKaraoke() {
+  const t = effectiveTime()
+  let li = -1
+  for (let i = 0; i < yrcLines.value.length; i++) {
+    if (yrcLines.value[i].time <= t) li = i
+    else break
+  }
+  const line = li >= 0 ? yrcLines.value[li] : null
+  const ci = line ? findCharIndex(line, t) : -1
+  if (li !== kLine.value || ci !== kChar.value) {
+    const lineChanged = li !== kLine.value
+    kLine.value = li
+    kChar.value = ci
+    if (lineChanged && li >= 0) {
+      nextTick(() => {
+        const el = yrcItemRefs.value[li]
+        if (el && yrcBoxRef.value) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      })
+    }
+  }
 }
 
 // ---- 频谱背景 ----
@@ -225,6 +277,7 @@ watch(
         }
       })
     }
+    if (yrcLines.value.length) updateKaraoke()
   }
 )
 
@@ -287,7 +340,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="mp-right">
-        <div v-if="lyrics.length" ref="lyricBoxRef" class="mp-lyrics">
+        <div v-if="!karaoke && lyrics.length" ref="lyricBoxRef" class="mp-lyrics">
           <p
             v-for="(line, i) in lyrics"
             :key="i"
@@ -296,9 +349,28 @@ onBeforeUnmount(() => {
             :class="{ on: i === lyricIndex }"
           >{{ line.text }}</p>
         </div>
+        <div v-else-if="karaoke && yrcLines.length" ref="yrcBoxRef" class="mp-lyrics karaoke">
+          <p
+            v-for="(line, i) in yrcLines"
+            :key="i"
+            :ref="(el) => (yrcItemRefs[i] = el)"
+            class="mp-k-line"
+            :class="{ on: i === kLine }"
+          >
+            <span
+              v-for="(c, j) in line.chars"
+              :key="j"
+              class="mp-k-char"
+              :class="charState(i, j)"
+            >{{ c.char }}</span>
+          </p>
+        </div>
         <p v-else class="mp-no-lyrics">暂无歌词</p>
 
-        <div v-if="lyrics.length" class="mp-lyric-adjust">
+        <div v-if="lyrics.length || yrcLines.length" class="mp-lyric-adjust">
+          <button v-if="yrcLines.length" class="mp-btn" :class="{ 'mp-k-on': karaoke }" @click="karaoke = !karaoke">
+            {{ karaoke ? '行级' : '卡拉OK' }}
+          </button>
           <button class="mp-btn" title="校准：提前" @click="nudgeLyrics(-0.5)">−0.5s</button>
           <button class="mp-btn" title="校准：提前" @click="nudgeLyrics(-0.1)">−0.1s</button>
           <span class="mp-adjust-value" :class="{ on: adjust !== 0 }">{{ adjust > 0 ? `+${adjust.toFixed(1)}s` : adjust === 0 ? '同步' : `${adjust.toFixed(1)}s` }}</span>
