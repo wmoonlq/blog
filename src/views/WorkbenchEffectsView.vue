@@ -11,6 +11,10 @@ import FireworksEffect from '../components/effects/FireworksEffect.vue'
 import SnowfallEffect from '../components/effects/SnowfallEffect.vue'
 import TiltCardEffect from '../components/effects/TiltCardEffect.vue'
 import TextPulseEffect from '../components/effects/TextPulseEffect.vue'
+import ParticleNebula from '../components/effects/ParticleNebula.vue'
+import WaveGrid from '../components/effects/WaveGrid.vue'
+import KnotWire from '../components/effects/KnotWire.vue'
+import MeteorFlow from '../components/effects/MeteorFlow.vue'
 import { effects, toggleParticleTrail } from '../stores/effects'
 
 const effectsList = [
@@ -25,7 +29,11 @@ const effectsList = [
   { title: '烟花', sub: '点击夜空，绽放一瞬', component: FireworksEffect, canvas: true },
   { title: '落雪', sub: '雪花无声，缓缓飘落', component: SnowfallEffect, canvas: true },
   { title: '立体卡片', sub: '跟随光标，旋转立起', component: TiltCardEffect },
-  { title: '逐字律动', sub: '每个字都有自己的节拍', component: TextPulseEffect }
+  { title: '逐字律动', sub: '每个字都有自己的节拍', component: TextPulseEffect },
+  { title: '粒子星云', sub: '900 颗粒子在暗夜中流转', component: ParticleNebula, canvas: true },
+  { title: '波形网格', sub: '正弦波在网格上起伏', component: WaveGrid, canvas: true },
+  { title: '莫比乌斯环', sub: '线框环结，永无止境', component: KnotWire, canvas: true },
+  { title: '流星雨', sub: '粒子倾斜坠落，如雨如流', component: MeteorFlow, canvas: true }
 ]
 </script>
 
