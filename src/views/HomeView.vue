@@ -1,8 +1,47 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { getAllPosts } from '../utils/posts'
+import { getAllNotes } from '../utils/notes'
+import { readingTime, relativeTime } from '../utils/format'
 
 const posts = computed(() => getAllPosts())
+const notes = computed(() => getAllNotes())
+
+const query = ref('')
+const activeTag = ref('')
+
+const allTags = computed(() => {
+  const set = new Set()
+  posts.value.forEach((p) => p.tags.forEach((t) => set.add(t)))
+  return [...set]
+})
+
+const filtered = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  return posts.value.filter((p) => {
+    if (activeTag.value && !p.tags.includes(activeTag.value)) return false
+    if (!q) return true
+    return (
+      p.title.toLowerCase().includes(q) ||
+      p.tags.some((t) => t.toLowerCase().includes(q)) ||
+      p.content.toLowerCase().includes(q)
+    )
+  })
+})
+
+const byYear = computed(() => {
+  const groups = new Map()
+  filtered.value.forEach((p) => {
+    const y = (p.date || '未知').slice(0, 4)
+    if (!groups.has(y)) groups.set(y, [])
+    groups.get(y).push(p)
+  })
+  return [...groups.entries()]
+})
+
+function toggleTag(tag) {
+  activeTag.value = activeTag.value === tag ? '' : tag
+}
 </script>
 
 <template>
@@ -10,18 +49,67 @@ const posts = computed(() => getAllPosts())
     <header class="hero">
       <h1 class="hero-title">记录与思考</h1>
       <p class="hero-sub">关于前端、设计与技术的随笔</p>
+      <div class="hero-stats">
+        <span>{{ posts.length }} 篇文章</span>
+        <span class="hero-stats-dot">·</span>
+        <span>{{ notes.length }} 篇随笔</span>
+        <span class="hero-stats-dot">·</span>
+        <span>{{ allTags.length }} 个标签</span>
+      </div>
       <router-link class="btn hero-btn" :to="{ name: 'posts-editor' }">写文章</router-link>
     </header>
-    <ul class="post-list">
-      <li v-for="post in posts" :key="post.slug">
-        <router-link class="post-card" :to="{ name: 'post', params: { slug: post.slug } }">
-          <time class="post-date">{{ post.date }}</time>
-          <h2 class="post-title">{{ post.title }}</h2>
-          <div v-if="post.tags.length" class="post-tags">
-            <span v-for="tag in post.tags" :key="tag">{{ tag }}</span>
-          </div>
-        </router-link>
-      </li>
-    </ul>
+
+    <div class="home-filter">
+      <div class="search-box home-search">
+        <span class="search-glyph">⌕</span>
+        <input
+          v-model="query"
+          class="search-input"
+          placeholder="在文章中搜索…"
+          aria-label="搜索文章"
+        />
+      </div>
+      <div v-if="allTags.length" class="tag-chips">
+        <button
+          class="chip"
+          :class="{ on: activeTag === '' }"
+          @click="activeTag = ''"
+        >全部</button>
+        <button
+          v-for="tag in allTags"
+          :key="tag"
+          class="chip"
+          :class="{ on: activeTag === tag }"
+          @click="toggleTag(tag)"
+        >{{ tag }}</button>
+      </div>
+    </div>
+
+    <template v-if="filtered.length">
+      <section v-for="[year, list] in byYear" :key="year" class="year-group">
+        <h2 class="year-label">{{ year }}</h2>
+        <ul class="post-list">
+          <li v-for="post in list" :key="post.slug">
+            <router-link class="post-card" :to="{ name: 'post', params: { slug: post.slug } }">
+              <div class="post-card-top">
+                <time class="post-date">{{ post.date }}</time>
+                <span class="post-time">{{ readingTime(post.content) }} 分钟读完</span>
+              </div>
+              <h3 class="post-title">{{ post.title }}</h3>
+              <div v-if="post.tags.length" class="post-tags">
+                <span v-for="tag in post.tags" :key="tag">{{ tag }}</span>
+              </div>
+              <span class="post-arrow">→</span>
+            </router-link>
+          </li>
+        </ul>
+      </section>
+    </template>
+
+    <div v-else class="home-empty">
+      <p class="home-empty-text">没有找到匹配的内容</p>
+      <p class="home-empty-sub">{{ activeTag ? `换个标签试试，或清除「${activeTag}」筛选` : '换个关键词试试' }}</p>
+      <button class="btn btn-sm" @click="query = ''; activeTag = ''">清除筛选</button>
+    </div>
   </div>
 </template>

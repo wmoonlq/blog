@@ -1,9 +1,11 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
+import { useMediaQuery } from '../utils/media'
 
 const open = ref(false)
 const route = useRoute()
+const isWide = useMediaQuery('(min-width: 760px)')
 
 const items = [
   { name: 'home', label: '文章' },
@@ -32,13 +34,27 @@ function onClickOutside(e) {
 
 onMounted(() => document.addEventListener('click', onClickOutside))
 onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
+
+function openSearch() {
+  document.dispatchEvent(new CustomEvent('open-search'))
+}
 </script>
 
 <template>
   <header class="nav">
     <div class="nav-inner">
       <router-link class="nav-brand" :to="{ name: 'home' }" @click="close">wmoonlq · Blog</router-link>
-      <button class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
+      <nav v-if="isWide" class="nav-links">
+        <router-link
+          v-for="item in items"
+          :key="item.name"
+          class="nav-link"
+          :class="{ active: route.name === item.name }"
+          :to="{ name: item.name }"
+        >{{ item.label }}</router-link>
+        <button class="nav-search" aria-label="搜索" @click="openSearch">⌕</button>
+      </nav>
+      <button v-else class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
         <span v-if="!open">☰</span>
         <span v-else>✕</span>
       </button>
@@ -53,6 +69,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
           :to="{ name: item.name }"
           @click="close"
         >{{ item.label }}</router-link>
+        <button class="nav-drop-link nav-drop-search" @click="close; openSearch()">⌕ 搜索</button>
       </nav>
     </transition>
   </header>

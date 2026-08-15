@@ -2,6 +2,7 @@
 import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { renderMarkdown } from '../utils/markdown'
 import { parseFrontmatter } from '../utils/frontmatter'
+import { readingTime } from '../utils/format'
 
 const props = defineProps({
   dir: { type: String, required: true }, // 'posts' | 'notes'
@@ -11,6 +12,7 @@ const props = defineProps({
 const REPO = 'wmoonlq/blog'
 const API = 'https://api.github.com'
 const TOKEN_KEY = 'notes-token'
+const DRAFT_KEY = `draft:${props.dir}`
 const isPosts = computed(() => props.dir === 'posts')
 
 const token = ref(localStorage.getItem(TOKEN_KEY) || '')
@@ -31,6 +33,50 @@ const form = reactive({
 })
 
 const preview = computed(() => renderMarkdown(form.content))
+
+const wordCount = computed(() => {
+  const text = form.content.replace(/\s+/g, '')
+  return text.length
+})
+
+const hasDraft = ref(false)
+
+let saveTimer = null
+
+function persistDraft() {
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    if (!form.content && !form.title) {
+      hasDraft.value = false
+      return
+    }
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ ...form, savedAt: Date.now() })
+    )
+    hasDraft.value = true
+  }, 800)
+}
+
+watch(() => ({ ...form }), persistDraft, { deep: true })
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return
+    const draft = JSON.parse(raw)
+    if (!draft.content && !draft.title) return
+    Object.assign(form, draft)
+    hasDraft.value = true
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY)
+  hasDraft.value = false
+}
 
 const autoName = computed(() => {
   const slug = (form.title || '')
@@ -116,6 +162,7 @@ async function editFile(name, sha) {
     form.content = content
     editingSha.value = sha
     message.value = ''
+    clearDraft()
   } catch (e) {
     message.value = e.message
   }
@@ -129,6 +176,7 @@ function resetForm() {
   form.content = ''
   editingSha.value = null
   message.value = ''
+  clearDraft()
 }
 
 async function save() {
@@ -185,6 +233,7 @@ async function save() {
       throw new Error(`保存失败（${res.status}）${detail ? `：${detail}` : ''}`)
     }
     message.value = isUpdate ? '已更新，等待自动构建发布' : '已提交到 GitHub，等待自动构建发布'
+    clearDraft()
     await checkConnection()
   } catch (e) {
     message.value = e.message
@@ -231,6 +280,7 @@ function loadInitialFile() {
 }
 
 onMounted(async () => {
+  restoreDraft()
   if (props.initialFile) pendingFile = props.initialFile
   if (token.value) {
     await checkConnection()
@@ -253,18 +303,24 @@ watch(connStatus, (s) => {
       <label class="field-label">标签（逗号分隔）</label>
       <input v-model="form.tags" class="input" placeholder="如 Vue, 前端" />
     </div>
-    <div class="field">
-      <label class="field-label">正文（Markdown）</label>
-      <textarea
-        v-model="form.content"
-        class="textarea"
-        rows="12"
-        placeholder="写点什么…"
-      ></textarea>
+    <div class="editor-split">
+      <div>
+        <label class="field-label">正文（Markdown）</label>
+        <textarea
+          v-model="form.content"
+          class="textarea"
+          rows="12"
+          placeholder="写点什么…"
+        ></textarea>
+      </div>
+      <div>
+        <label class="field-label">预览</label>
+        <div class="prose editor-preview" v-html="preview"></div>
+      </div>
     </div>
-    <div class="editor-preview-wrap">
-      <label class="field-label">预览</label>
-      <div class="prose editor-preview" v-html="preview"></div>
+    <div class="editor-stats">
+      <span>{{ wordCount }} 字 · 约 {{ readingTime(form.content) }} 分钟读完</span>
+      <span v-if="hasDraft" class="draft-badge">草稿已保存</span>
     </div>
     <div class="editor-actions">
       <button class="btn btn-primary" :disabled="saving" @click="save">

@@ -3,13 +3,21 @@ import TypewriterEffect from '../components/effects/TypewriterEffect.vue'
 import CharRainEffect from '../components/effects/CharRainEffect.vue'
 import CharRevealEffect from '../components/effects/CharRevealEffect.vue'
 import MagneticEffect from '../components/effects/MagneticEffect.vue'
+import DigitalClock from '../components/effects/DigitalClock.vue'
+import RippleEffect from '../components/effects/RippleEffect.vue'
+import BreathingCircle from '../components/effects/BreathingCircle.vue'
+import EchoTrail from '../components/effects/EchoTrail.vue'
 import { effects, toggleParticleTrail } from '../stores/effects'
 
 const effectsList = [
   { title: '打字机', sub: '逐字敲出，光标闪烁', component: TypewriterEffect },
   { title: '字符雨', sub: '单色字符垂直坠落', component: CharRainEffect, canvas: true },
   { title: '逐字浮现', sub: '文字按节奏次第点亮', component: CharRevealEffect },
-  { title: '磁性按钮', sub: '按钮被光标轻轻吸动', component: MagneticEffect }
+  { title: '磁性按钮', sub: '按钮被光标轻轻吸动', component: MagneticEffect },
+  { title: '数字时钟', sub: '衬线数字，精确到秒', component: DigitalClock },
+  { title: '点击涟漪', sub: '点击水面，波纹荡开', component: RippleEffect, canvas: true },
+  { title: '呼吸圆', sub: '跟随节奏一吸一呼', component: BreathingCircle },
+  { title: '光标残影', sub: '移动鼠标，字符尾随', component: EchoTrail }
 ]
 </script>
 
