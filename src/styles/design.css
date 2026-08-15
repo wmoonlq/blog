@@ -3783,61 +3783,51 @@ img {
 
 
 /* ============================================================
-   设置面板
+   设置面板 — 下拉式
    ============================================================ */
 .nav-settings {
   margin-left: 6px;
   font-size: 17px;
 }
 
-.settings-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 95;
-  background: var(--bg-search);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 0;
+.nav-settings.on {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
-.settings-panel {
-  width: 380px;
-  max-width: 100vw;
-  height: 100%;
+.settings-root {
+  position: relative;
+}
+
+.settings-drop {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 96px);
   background: var(--bg);
-  border-left: 1px solid var(--divider);
+  border: var(--border-card);
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  animation: settings-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-@keyframes settings-in {
-  from {
-    transform: translateX(40px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  overflow: hidden;
+  z-index: 60;
 }
 
 .settings-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--divider);
 }
 
 .settings-title {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 18px;
+  font-size: 16px;
   letter-spacing: 0.04em;
 }
 
@@ -3857,11 +3847,11 @@ img {
 .settings-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 24px 32px;
+  padding: 4px 20px 24px;
 }
 
 .settings-sec {
-  padding: 18px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--divider);
 }
 
@@ -3899,9 +3889,13 @@ img {
   word-break: break-all;
 }
 
-@media (max-width: 720px) {
-  .settings-panel {
-    width: 100%;
-    border-left: none;
-  }
+
+.nav-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-side .nav-toggle {
+  margin-right: 2px;
 }

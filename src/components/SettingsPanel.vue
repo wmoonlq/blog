@@ -25,6 +25,11 @@ function closePanel() {
   open.value = false
 }
 
+function onClickOutside(e) {
+  if (!e.target || !e.target.closest) return
+  if (!e.target.closest('.settings-root')) closePanel()
+}
+
 function applyBackground() {
   setBackground(bgInput.value.trim())
 }
@@ -44,10 +49,12 @@ function onOpenSettings() {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  document.addEventListener('click', onClickOutside)
   document.addEventListener('open-settings', onOpenSettings)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
+  document.removeEventListener('click', onClickOutside)
   document.removeEventListener('open-settings', onOpenSettings)
   terminateWorker()
   if (bgPreview.value) URL.revokeObjectURL(bgPreview.value)
@@ -121,14 +128,19 @@ async function uploadBg() {
 </script>
 
 <template>
-  <button class="theme-toggle nav-settings" aria-label="设置" @click="openPanel">⚙</button>
+  <div class="settings-root">
+    <button
+      class="theme-toggle nav-settings"
+      :class="{ on: open }"
+      :aria-expanded="open"
+      aria-label="设置"
+      @click.stop="open ? closePanel() : openPanel()"
+    >⚙</button>
 
-  <transition name="modal-fade">
-    <div v-if="open" class="settings-backdrop" @click.self="closePanel">
-      <div class="settings-panel" role="dialog" aria-label="设置">
+    <transition name="nav-drop">
+      <div v-if="open" class="settings-drop" role="dialog" aria-label="设置" @click.stop>
         <div class="settings-head">
           <h2 class="settings-title">设置</h2>
-          <button class="settings-close" aria-label="关闭" @click="closePanel">✕</button>
         </div>
 
         <div class="settings-scroll">
@@ -205,6 +217,6 @@ async function uploadBg() {
           </section>
         </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+  </div>
 </template>

@@ -63,12 +63,14 @@ function openSettings() {
           :to="{ name: item.name }"
         >{{ item.label }}</router-link>
         <button class="nav-search" aria-label="搜索" @click="openSearch">⌕</button>
-        <SettingsPanel />
       </nav>
-      <button v-else class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
-        <span v-if="!open">☰</span>
-        <span v-else>✕</span>
-      </button>
+      <div class="nav-side">
+        <button v-if="!isWide" class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
+          <span v-if="!open">☰</span>
+          <span v-else>✕</span>
+        </button>
+        <SettingsPanel />
+      </div>
     </div>
     <transition name="nav-drop">
       <nav v-if="open" class="nav-drop">
