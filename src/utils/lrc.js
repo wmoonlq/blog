@@ -12,7 +12,9 @@ export function parseLRC(text) {
     const matches = [...raw.matchAll(re)]
     if (!matches.length) continue
     const content = raw.replace(re, '').trim()
-    if (!content) continue // 跳过空白/元数据行
+    if (!content) continue // 跳过空白行
+    // 跳过元数据行：作词/作曲/编曲/制作/录音/混音/母带/合声 等
+    if (/^(作词|作曲|编曲|制作人|制作|录音|混音|母带|合声|和声|监制|出品|OP|SP|吉他|贝斯|鼓|键盘|弦乐|发行|唱片公司|合音|低音提琴|钢琴|架子鼓|原声|琵琶|古筝|小提琴|大提琴|鼓手|贝斯手|吉他手|合唱)/.test(content)) continue
     for (const m of matches) {
       const min = parseInt(m[1], 10)
       const sec = parseInt(m[2], 10)
