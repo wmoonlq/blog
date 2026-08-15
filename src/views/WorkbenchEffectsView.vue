@@ -15,6 +15,7 @@ import ParticleNebula from '../components/effects/ParticleNebula.vue'
 import WaveGrid from '../components/effects/WaveGrid.vue'
 import KnotWire from '../components/effects/KnotWire.vue'
 import MeteorFlow from '../components/effects/MeteorFlow.vue'
+import AntiGravityEffect from '../components/effects/AntiGravityEffect.vue'
 import { effects, toggleParticleTrail } from '../stores/effects'
 
 const effectsList = [
@@ -33,7 +34,8 @@ const effectsList = [
   { title: '粒子星云', sub: '900 颗粒子在暗夜中流转', component: ParticleNebula, canvas: true },
   { title: '波形网格', sub: '正弦波在网格上起伏', component: WaveGrid, canvas: true },
   { title: '莫比乌斯环', sub: '线框环结，永无止境', component: KnotWire, canvas: true },
-  { title: '流星雨', sub: '粒子倾斜坠落，如雨如流', component: MeteorFlow, canvas: true }
+  { title: '流星雨', sub: '粒子倾斜坠落，如雨如流', component: MeteorFlow, canvas: true },
+  { title: '反重力粒子', sub: '粒子落地，被光标轻轻举起', component: AntiGravityEffect, canvas: true }
 ]
 </script>
 
