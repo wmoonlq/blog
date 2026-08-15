@@ -1,11 +1,16 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { parseLRC, findLyricIndex } from '../utils/lrc'
 
 const props = defineProps({
   tracks: { type: Array, required: true }
 })
 
 const audioRef = ref(null)
+const lyricBoxRef = ref(null)
+const lyricItemRefs = ref([])
+const canvasRef = ref(null)
+
 const playing = ref(false)
 const index = ref(0)
 const current = ref(0)
@@ -13,6 +18,11 @@ const duration = ref(0)
 const volume = ref(0.8)
 const mode = ref('list') // list | loop | random
 const showList = ref(false)
+const lyrics = ref([])
+const lyricIndex = ref(-1)
+const ctx = ref(null)
+const analyser = ref(null)
+let raf = null
 
 const track = computed(() => props.tracks[index.value] || null)
 const progress = computed(() => (duration.value ? (current.value / duration.value) * 100 : 0))
@@ -92,36 +102,164 @@ function onKeydown(e) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
+// ---- 歌词加载 ----
+async function loadLyrics() {
+  const t = track.value
+  lyricIndex.value = -1
+  if (!t || !t.lyrics) {
+    lyrics.value = []
+    return
+  }
+  try {
+    const res = await fetch(t.lyrics)
+    if (!res.ok) throw new Error('no lyrics')
+    const text = await res.text()
+    lyrics.value = parseLRC(text)
+  } catch {
+    lyrics.value = []
+  }
+}
+
+// ---- 频谱背景 ----
+let audioCtx = null
+let sourceNode = null
+
+function setupAnalyser() {
+  if (!audioRef.value) return
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+    sourceNode = audioCtx.createMediaElementSource(audioRef.value)
+    analyser.value = audioCtx.createAnalyser()
+    analyser.value.fftSize = 128
+    sourceNode.connect(analyser.value)
+    analyser.value.connect(audioCtx.destination)
+  }
+  drawSpectrum()
+}
+
+function drawSpectrum() {
+  const canvas = canvasRef.value
+  if (!canvas || !analyser.value) return
+  const dpr = window.devicePixelRatio || 1
+  const w = canvas.clientWidth
+  const h = canvas.clientHeight
+  canvas.width = w * dpr
+  canvas.height = h * dpr
+  const c = ctx.value || canvas.getContext('2d')
+  ctx.value = c
+  c.scale(dpr, dpr)
+
+  const data = new Uint8Array(analyser.value.frequencyBinCount)
+  const bars = 56
+  const style = getComputedStyle(document.documentElement)
+  const accent = style.getPropertyValue('--accent').trim() || '#B68D73'
+  const text = style.getPropertyValue('--text').trim() || '#1A1816'
+
+  function frame() {
+    c.clearRect(0, 0, w, h)
+    analyser.value.getByteFrequencyData(data)
+    const bw = w / bars
+    for (let i = 0; i < bars; i++) {
+      const idx = Math.floor((i / bars) * data.length * 0.8)
+      const v = data[idx] / 255
+      const bh = Math.max(2, v * h * 0.9)
+      c.globalAlpha = 0.16 + v * 0.5
+      c.fillStyle = i % 7 === 0 ? accent : text
+      c.fillRect(i * bw + 1, h - bh, bw - 2, bh)
+    }
+    c.globalAlpha = 1
+    raf = requestAnimationFrame(frame)
+  }
+  cancelAnimationFrame(raf)
+  frame()
+}
+
+// ---- 歌词滚动 ----
+watch(
+  () => current.value,
+  () => {
+    const idx = findLyricIndex(lyrics.value, current.value)
+    if (idx !== lyricIndex.value) {
+      lyricIndex.value = idx
+      nextTick(() => {
+        const el = lyricItemRefs.value[idx]
+        if (el && lyricBoxRef.value) {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+      })
+    }
+  }
+)
+
+watch(
+  () => index.value,
+  () => {
+    loadLyrics()
+  },
+  { immediate: true }
+)
 
 watch(
   () => props.tracks,
   () => {
     if (index.value >= props.tracks.length) index.value = 0
+    loadLyrics()
   }
 )
+
+function onPlayStart() {
+  playing.value = true
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume()
+  if (!analyser.value) setupAnalyser()
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown)
+  window.addEventListener('resize', () => raf && drawSpectrum())
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown)
+  cancelAnimationFrame(raf)
+  if (audioCtx) audioCtx.close()
+})
 </script>
 
 <template>
-  <div class="music-player">
+  <div class="music-player" :class="{ hasLyrics: lyrics.length }">
     <audio
       ref="audioRef"
       :src="track ? track.source : ''"
-      @play="playing = true"
+      @play="onPlayStart"
       @pause="playing = false"
       @timeupdate="current = audioRef.currentTime"
       @loadedmetadata="duration = audioRef.duration"
       @ended="onEnded"
     ></audio>
 
-    <div class="mp-current">
-      <div class="mp-cover" :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}">
-        <span v-if="!track || !track.cover" class="mp-cover-glyph">♫</span>
+    <div class="mp-body">
+      <div class="mp-left">
+        <div class="mp-cover-lg" :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}">
+          <span v-if="!track || !track.cover" class="mp-cover-glyph">♫</span>
+        </div>
+        <div class="mp-info">
+          <p class="mp-title">{{ track ? track.title : '—' }}</p>
+          <p class="mp-artist">{{ track && track.artist ? track.artist : '未知歌手' }}</p>
+        </div>
+        <canvas ref="canvasRef" class="mp-spectrum"></canvas>
       </div>
-      <div class="mp-info">
-        <p class="mp-title">{{ track ? track.title : '—' }}</p>
-        <p class="mp-artist">{{ track && track.artist ? track.artist : '未知歌手' }}</p>
+
+      <div class="mp-right">
+        <div v-if="lyrics.length" ref="lyricBoxRef" class="mp-lyrics">
+          <p
+            v-for="(line, i) in lyrics"
+            :key="i"
+            :ref="(el) => (lyricItemRefs[i] = el)"
+            class="mp-lyric-line"
+            :class="{ on: i === lyricIndex }"
+          >{{ line.text }}</p>
+        </div>
+        <p v-else class="mp-no-lyrics">暂无歌词</p>
       </div>
     </div>
 

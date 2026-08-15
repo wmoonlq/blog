@@ -17,6 +17,7 @@ export function getAllMusic() {
         date: data.date || '',
         source: data.source || '',
         cover: data.cover || '',
+        lyrics: data.lyrics || '',
         content
       }
     })
