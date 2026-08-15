@@ -32,3 +32,23 @@
 ## 编辑工具
 
 - 网页端随笔编辑器：https://wmoonlq.github.io/blog/#/notes/editor（首次需在高级选项中粘贴一次 Token，存于浏览器 localStorage，之后免粘贴）
+
+## 开发日记
+
+- 每轮开发结束，将功能迭代、踩坑记录同步到 `devlog/README.md`（Markdown，按日期分节）
+- 本文件（AGENTS.md）为项目记忆：新增模块/约定时同步更新；本文件变动随代码一起提交
+
+## 内容与媒体模块速查
+
+| 模块 | 元数据目录 | 文件目录 | 说明 |
+|---|---|---|---|
+| 文章 | `src/posts/*.md` | — | frontmatter: title/date/tags |
+| 随笔 | `src/notes/*.md` | — | frontmatter: date（title 可选） |
+| 视频 | `src/videos/*.md` | `public/videos/` | frontmatter: title/date/source/category/collection/poster/type |
+| 音乐 | `src/music/*.md` | `public/music/` | frontmatter: title/date/source/artist/cover/lyrics/type |
+| 背景图 | — | `public/bg/` | 由特效页上传，无元数据 |
+
+- 媒体上传/删除统一走 `src/utils/githubFiles.js`：密码门禁 `123456`（前端校验防刷），Token 复用 localStorage `notes-token`（fine-grained PAT）
+- 上传后立即显示：`src/utils/localMedia.js` 本地记录待发布条目（带「待发布」角标），构建完成按 slug 去重自动转正式
+- 歌词：LRC 解析在 `src/utils/lrc.js`（支持 `[offset:]` 标签）；播放器内置歌词校准（±0.1/0.5s，按歌曲记忆）；官方歌词源可用网易云 API `music.163.com/api/song/lyric?id=`
+- 歌曲时长可用 FLAC STREAMINFO 解析（sample rate 20bit @ offset 10，total samples 36bit @ offset 14）
