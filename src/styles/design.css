@@ -3676,3 +3676,42 @@ img {
   font-size: 13px;
   color: var(--text-secondary);
 }
+
+
+/* 歌词校准条 */
+.mp-lyric-adjust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-top: 1px solid var(--divider);
+  padding-top: 8px;
+}
+
+.mp-lyric-adjust .mp-btn {
+  font-size: 11px;
+  padding: 4px 6px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+}
+
+.mp-lyric-adjust .mp-btn:hover {
+  border-color: var(--accent);
+}
+
+.mp-adjust-value {
+  min-width: 64px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-adjust-value.on {
+  color: var(--accent);
+}
+
+.mp-adjust-reset {
+  color: var(--accent);
+}

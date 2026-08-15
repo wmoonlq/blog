@@ -19,10 +19,27 @@ const volume = ref(0.8)
 const mode = ref('list') // list | loop | random
 const showList = ref(false)
 const lyrics = ref([])
+const lrcOffset = ref(0) // LRC 文件内 [offset:] 标签
+const adjust = ref(0) // 用户手动校准偏移（秒）
 const lyricIndex = ref(-1)
+const showAdjust = ref(false)
 const ctx = ref(null)
 const analyser = ref(null)
 let raf = null
+
+const OFFSET_KEY = 'lyric-adjust'
+
+function savedAdjust(slug) {
+  try {
+    return parseFloat(localStorage.getItem(`${OFFSET_KEY}:${slug}`)) || 0
+  } catch {
+    return 0
+  }
+}
+
+function trackAdjustKey() {
+  return `${OFFSET_KEY}:${track.value ? track.value.slug : ''}`
+}
 
 const track = computed(() => props.tracks[index.value] || null)
 const progress = computed(() => (duration.value ? (current.value / duration.value) * 100 : 0))
@@ -106,18 +123,38 @@ function onKeydown(e) {
 async function loadLyrics() {
   const t = track.value
   lyricIndex.value = -1
+  adjust.value = savedAdjust(t ? t.slug : '')
   if (!t || !t.lyrics) {
     lyrics.value = []
+    lrcOffset.value = 0
     return
   }
   try {
     const res = await fetch(t.lyrics)
     if (!res.ok) throw new Error('no lyrics')
     const text = await res.text()
-    lyrics.value = parseLRC(text)
+    const parsed = parseLRC(text)
+    lyrics.value = parsed.lines
+    lrcOffset.value = parsed.offset
   } catch {
     lyrics.value = []
+    lrcOffset.value = 0
   }
+}
+
+// ---- 歌词校准 ----
+function nudgeLyrics(delta) {
+  adjust.value = Math.min(20, Math.max(-20, Math.round((adjust.value + delta) * 10) / 10))
+  localStorage.setItem(trackAdjustKey(), String(adjust.value))
+}
+
+function resetAdjust() {
+  adjust.value = 0
+  localStorage.removeItem(trackAdjustKey())
+}
+
+function effectiveTime() {
+  return current.value + adjust.value + lrcOffset.value
 }
 
 // ---- 频谱背景 ----
@@ -178,7 +215,7 @@ function drawSpectrum() {
 watch(
   () => current.value,
   () => {
-    const idx = findLyricIndex(lyrics.value, current.value)
+    const idx = findLyricIndex(lyrics.value, effectiveTime())
     if (idx !== lyricIndex.value) {
       lyricIndex.value = idx
       nextTick(() => {
@@ -260,6 +297,15 @@ onBeforeUnmount(() => {
           >{{ line.text }}</p>
         </div>
         <p v-else class="mp-no-lyrics">暂无歌词</p>
+
+        <div v-if="lyrics.length" class="mp-lyric-adjust">
+          <button class="mp-btn" title="校准：提前" @click="nudgeLyrics(-0.5)">−0.5s</button>
+          <button class="mp-btn" title="校准：提前" @click="nudgeLyrics(-0.1)">−0.1s</button>
+          <span class="mp-adjust-value" :class="{ on: adjust !== 0 }">{{ adjust > 0 ? `+${adjust.toFixed(1)}s` : adjust === 0 ? '同步' : `${adjust.toFixed(1)}s` }}</span>
+          <button class="mp-btn" title="校准：延后" @click="nudgeLyrics(0.1)">+0.1s</button>
+          <button class="mp-btn" title="校准：延后" @click="nudgeLyrics(0.5)">+0.5s</button>
+          <button v-if="adjust !== 0" class="mp-btn mp-adjust-reset" title="重置校准" @click="resetAdjust">重置</button>
+        </div>
       </div>
     </div>
 

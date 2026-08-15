@@ -1,7 +1,14 @@
 export function parseLRC(text) {
   const lines = []
+  let offset = 0
   const re = /\[(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?\]/g
   for (const raw of String(text || '').split('\n')) {
+    // LRC 规范：[offset:+/-毫秒] 整首歌偏移
+    const om = raw.match(/^\s*\[offset:\s*([+-]?\d+)\s*\]/i)
+    if (om) {
+      offset = parseInt(om[1], 10) / 1000
+      continue
+    }
     const matches = [...raw.matchAll(re)]
     if (!matches.length) continue
     const content = raw.replace(re, '').trim()
@@ -14,7 +21,7 @@ export function parseLRC(text) {
     }
   }
   lines.sort((a, b) => a.time - b.time)
-  return lines
+  return { lines, offset }
 }
 
 export function findLyricIndex(lines, time) {
