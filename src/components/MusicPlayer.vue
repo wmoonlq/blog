@@ -175,6 +175,16 @@ function effectiveTime() {
   return current.value + adjust.value + lrcOffset.value
 }
 
+// ---- 点击歌词跳转进度 ----
+function seekToLyric(time) {
+  const a = audioRef.value
+  if (!a || !track.value) return
+  // 反向应用校准偏移：点击的歌词时间 - 用户偏移 = 实际播放时间
+  const target = Math.max(0, Math.min(duration.value || 0, time - adjust.value - lrcOffset.value))
+  a.currentTime = target
+  if (a.paused) a.play()
+}
+
 // ---- 逐字卡拉OK ----
 const kLine = ref(-1)
 const kChar = ref(-1)
@@ -347,6 +357,8 @@ onBeforeUnmount(() => {
             :ref="(el) => (lyricItemRefs[i] = el)"
             class="mp-lyric-line"
             :class="{ on: i === lyricIndex }"
+            :title="`点击跳转 ${fmt(line.time)}`"
+            @click="seekToLyric(line.time)"
           >{{ line.text }}</p>
         </div>
         <div v-else-if="karaoke && yrcLines.length" ref="yrcBoxRef" class="mp-lyrics karaoke">
@@ -356,6 +368,8 @@ onBeforeUnmount(() => {
             :ref="(el) => (yrcItemRefs[i] = el)"
             class="mp-k-line"
             :class="{ on: i === kLine }"
+            :title="`点击跳转 ${fmt(line.time)}`"
+            @click="seekToLyric(line.time)"
           >
             <span
               v-for="(c, j) in line.chars"

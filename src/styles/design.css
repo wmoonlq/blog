@@ -3764,3 +3764,19 @@ img {
   color: var(--accent);
   border-color: var(--accent);
 }
+
+
+/* 歌词点击跳转 */
+.mp-lyric-line,
+.mp-k-line {
+  cursor: pointer;
+}
+
+.mp-lyric-line:hover {
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.mp-k-line:hover {
+  opacity: 0.9;
+}
