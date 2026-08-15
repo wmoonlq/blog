@@ -174,7 +174,7 @@ const effectsList = [
   { title: '波形网格', sub: '正弦波在网格上起伏', component: WaveGrid, canvas: true },
   { title: '莫比乌斯环', sub: '线框环结，永无止境', component: KnotWire, canvas: true },
   { title: '流星雨', sub: '粒子倾斜坠落，如雨如流', component: MeteorFlow, canvas: true },
-  { title: '反重力粒子', sub: '粒子聚成永恒万花筒，被光标惊散后回拢', component: AntiGravityEffect, canvas: true },
+  { title: '反重力粒子', sub: '方块拼成永恒万花筒，被光标惊散后回拢', component: AntiGravityEffect, canvas: true },
   { title: '粒子玫瑰', sub: '四千粒子，聚成一朵玫瑰', component: ParticleRose, canvas: true }
 ]
 </script>

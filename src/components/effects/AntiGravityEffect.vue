@@ -1,234 +1,260 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
+import * as THREE from 'three'
+import { useThree } from '../../utils/useThree'
 
-const canvasRef = ref(null)
+const R = 3.6
+const FIELD_R = 4.2
+const PUSH = 0.16
+const SPRING = 0.05
+const DAMP = 0.9
 
-let ctx = null
-let raf = null
-let W = 0
-let H = 0
-let cx = 0
-let cy = 0
-let rot = 0
-const mouse = { x: -999, y: -999, active: false }
+const RED = new THREE.Color(0xB71C1C)
+const BLACK = new THREE.Color(0x0A0A0A)
 
-const FIELD_R = 140
-const PUSH = 1.1
-const SPRING = 0.045
-const DAMP = 0.88
+// 共享鼠标状态（NDC 坐标），由事件层写入、渲染循环读取
+const pointerState = { x: 0, y: 0, active: false }
 
-const REDS = ['#8B0000', '#A31111', '#B71C1C', '#C62828', '#D32F2F']
-const BLACK = '#0A0A0A'
+const el = useThree(({ scene, camera }, state) => {
+  camera.position.set(0, 0, 11)
+  camera.lookAt(0, 0, 0)
 
-const parts = [] // { r, theta, size, color, kind, linkPrev } linkPrev: 相连的前一个粒子索引
-const bgParts = []
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55))
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9)
+  dir.position.set(3, 4, 6)
+  scene.add(dir)
 
-function deg(a) {
-  return (a * Math.PI) / 180
-}
-
-// ---- SVG Path 采样：保证纹路是连贯线条 ----
-const svgNs = 'http://www.w3.org/2000/svg'
-const svgEl = document.createElementNS(svgNs, 'svg')
-
-function samplePath(d, count) {
-  const path = document.createElementNS(svgNs, 'path')
-  path.setAttribute('d', d)
-  svgEl.appendChild(path)
-  const len = path.getTotalLength()
-  const pts = []
-  for (let i = 0; i < count; i++) {
-    const p = path.getPointAtLength((len * i) / count)
-    pts.push({ x: p.x, y: p.y })
+  function deg(a) {
+    return (a * Math.PI) / 180
   }
-  svgEl.removeChild(path)
-  return pts
-}
 
-function tomoePath(dist, head, tail, ang) {
-  // 头部圆 (dist,0) 半径 head，尾巴向中心弯曲
-  const p1 = `${dist} ${-head}`
-  const p2 = `${dist} ${head}`
-  const d0 = dist - head
-  return `M ${p1} A ${head} ${head} 0 1 1 ${p2} C ${d0 - 2} ${head - 2} ${d0 - 12} 6 ${d0 - tail} 0 C ${d0 - 12} -6 ${d0 - 2} ${-head + 2} ${p1} Z`
-}
+  // ---- SVG Path 采样：纹路连续 ----
+  const svgNs = 'http://www.w3.org/2000/svg'
+  const svgEl = document.createElementNS(svgNs, 'svg')
+  function samplePath(d, count) {
+    const path = document.createElementNS(svgNs, 'path')
+    path.setAttribute('d', d)
+    svgEl.appendChild(path)
+    const len = path.getTotalLength()
+    const pts = []
+    for (let i = 0; i < count; i++) {
+      const p = path.getPointAtLength((len * i) / count)
+      pts.push(p.x, p.y)
+    }
+    svgEl.removeChild(path)
+    return pts
+  }
+  function rotatePoint(x, y, ang) {
+    const a = deg(ang)
+    const c = Math.cos(a)
+    const s = Math.sin(a)
+    return [x * c - y * s, x * s + y * c]
+  }
+  function tomoePath(dist, head, tail) {
+    const p1 = `${dist} ${-head}`
+    const p2 = `${dist} ${head}`
+    const d0 = dist - head
+    return `M ${p1} A ${head} ${head} 0 1 1 ${p2} C ${d0 - 2} ${head - 2} ${d0 - 12} 6 ${d0 - tail} 0 C ${d0 - 12} -6 ${d0 - 2} ${-head + 2} ${p1} Z`
+  }
 
-function rotatePoint(p, ang) {
-  const a = deg(ang)
-  const c = Math.cos(a)
-  const s = Math.sin(a)
-  return { x: p.x * c - p.y * s, y: p.x * s + p.y * c }
-}
-
-function buildEye(R) {
+  // ---- 生成目标点集 [x,y,kind] ----
+  const homes = [] // [x, y, isInk]
   const STAR = R * 0.8
   const triAngles = [
     [90, 210, 330],
     [30, 150, 270]
   ]
-  // 六芒星每条边独立成组
+  for (const angles of triAngles) {
+    const vs = angles.map((a) => ({ x: Math.cos(deg(a)) * STAR, y: Math.sin(deg(a)) * STAR }))
+    for (let i = 0; i < 3; i++) {
+      const p1 = vs[i]
+      const p2 = vs[(i + 1) % 3]
+      const pts = samplePath(`M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`, 26)
+      for (let j = 0; j < pts.length; j += 2) homes.push(pts[j], pts[j + 1], 1)
+    }
+  }
+  for (let k = 0; k < 3; k++) {
+    const pts = samplePath(tomoePath(R * 0.52, R * 0.15, R * 0.24), 80)
+    for (let j = 0; j < pts.length; j += 2) {
+      const [rx, ry] = rotatePoint(pts[j], pts[j + 1], 60 + k * 120)
+      homes.push(rx, ry, 1)
+    }
+  }
+  const pupil = samplePath(`M ${-R * 0.16} 0 A ${R * 0.16} ${R * 0.16} 0 1 0 ${R * 0.16} 0 A ${R * 0.16} ${R * 0.16} 0 1 0 ${-R * 0.16} 0`, 44)
+  for (let j = 0; j < pupil.length; j += 2) homes.push(pupil[j], pupil[j + 1], 1)
 
-  // 红色眼球底（圆盘粒子）
-  const bgCount = 460
+  // 红底圆盘方块
+  const bgCount = 520
   for (let i = 0; i < bgCount; i++) {
     const r = R * Math.sqrt(Math.random())
     const a = Math.random() * Math.PI * 2
-    bgParts.push({
-      r,
-      theta: a,
-      size: 1.7 + Math.random() * 1.3,
-      color: REDS[Math.floor(Math.random() * REDS.length)],
-      kind: 'bg'
-    })
+    homes.push(Math.cos(a) * r, Math.sin(a) * r, 0)
   }
-}
 
-function spawn() {
-  const R = Math.min(W, H) * 0.34
-  parts.length = 0
-  bgParts.length = 0
-  buildEye(R)
-  ;[...parts, ...bgParts].forEach((p) => {
-    p.x = Math.cos(p.theta) * p.r
-    p.y = Math.sin(p.theta) * p.r
-    p.vx = 0
-    p.vy = 0
-  })
-}
+  const count = homes.length / 3
+  const positions = new Float32Array(count * 3)
+  const homeArr = new Float32Array(homes)
+  const velocities = new Float32Array(count * 3)
+  const spins = new Float32Array(count * 3)
+  const spinTargets = new Float32Array(count * 3)
+  const disp = new Float32Array(count)
 
-function targetPos(p, breathe) {
+  for (let i = 0; i < count; i++) {
+    const x = homes[i * 3]
+    const y = homes[i * 3 + 1]
+    const r = 1.5 + Math.random() * 4
+    const a = Math.random() * Math.PI * 2
+    positions[i * 3] = x + Math.cos(a) * r * 0.8
+    positions[i * 3 + 1] = y + Math.sin(a) * r * 0.8
+    positions[i * 3 + 2] = 0
+  }
+
+  // ---- InstancedMesh 方块 ----
+  const geo = new THREE.BoxGeometry(0.16, 0.16, 0.1)
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.08 })
+  const mesh = new THREE.InstancedMesh(geo, mat, count)
+  const dummy = new THREE.Object3D()
+  const color = new THREE.Color()
+
+  for (let i = 0; i < count; i++) {
+    const isInk = homes[i * 3 + 2] === 1
+    mesh.setColorAt(i, isInk ? BLACK : RED)
+  }
+  mesh.instanceColor.needsUpdate = true
+
+  const group = new THREE.Group()
+  group.add(mesh)
+  scene.add(group)
+
+  let rot = 0
+  const raycaster = new THREE.Raycaster()
+  const pointer = new THREE.Vector2()
+  const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)
+  const mouse3D = new THREE.Vector3()
+  let mouseX = 1e6
+  let mouseY = 1e6
+
   return {
-    x: cx + Math.cos(p.theta + rot) * p.r * breathe,
-    y: cy + Math.sin(p.theta + rot) * p.r * breathe
-  }
-}
+    update: (t) => {
+      rot += 0.0035
+      const breathe = 1 + Math.sin(t * 0.5) * 0.015
+      group.rotation.z = rot
 
-function stepPhysics(p, breathe) {
-  const t = targetPos(p, breathe)
-  const dxm = mouse.x - p.x
-  const dym = mouse.y - p.y
-  const dm = Math.hypot(dxm, dym)
-  if (mouse.active && dm < FIELD_R && dm > 0.001) {
-    const f = (1 - dm / FIELD_R) * PUSH
-    p.vx += (dxm / dm) * f
-    p.vy += (dym / dm) * f - 0.08
-  }
-  p.vx += (t.x - p.x) * SPRING
-  p.vy += (t.y - p.y) * SPRING
-  p.vx *= DAMP
-  p.vy *= DAMP
-  p.x += p.vx
-  p.y += p.vy
-  return Math.hypot(t.x - p.x, t.y - p.y)
-}
+      // 鼠标在 z=0 平面的世界坐标
+      if (state.active) {
+        pointer.set(state.x, state.y)
+        raycaster.setFromCamera(pointer, camera)
+        if (raycaster.ray.intersectPlane(plane, mouse3D)) {
+          mouseX = mouse3D.x
+          mouseY = mouse3D.y
+        }
+      } else {
+        mouseX = 1e6
+        mouseY = 1e6
+      }
 
-function draw() {
-  ctx.clearRect(0, 0, W, H)
-  rot += 0.003
-  const breathe = 1 + Math.sin(rot * 3.2) * 0.015
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3
+        const hx = homeArr[i3]
+        const hy = homeArr[i3 + 1]
+        const tx = hx * breathe
+        const ty = hy * breathe
 
-  if (mouse.active) {
-    ctx.globalAlpha = 0.08
-    ctx.fillStyle = '#C62828'
-    ctx.beginPath()
-    ctx.arc(mouse.x, mouse.y, FIELD_R, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.globalAlpha = 1
-  }
+        // 反重力场
+        const dxm = mouseX - positions[i3]
+        const dym = mouseY - positions[i3 + 1]
+        const dm = Math.hypot(dxm, dym)
+        let disturbed = false
+        if (dm < FIELD_R && dm > 0.001) {
+          const f = (1 - dm / FIELD_R) * PUSH
+          velocities[i3] += (dxm / dm) * f
+          velocities[i3 + 1] += (dym / dm) * f
+          velocities[i3 + 2] += 0.02
+          disturbed = true
+        }
 
-  // 红底粒子
-  for (const p of bgParts) {
-    const disp = stepPhysics(p, breathe)
-    ctx.fillStyle = p.color
-    ctx.globalAlpha = 0.5 + 0.45 * Math.max(0, 1 - disp / 90)
-    ctx.beginPath()
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-    ctx.fill()
-  }
+        // 弹簧回弹
+        velocities[i3] += (tx - positions[i3]) * SPRING
+        velocities[i3 + 1] += (ty - positions[i3 + 1]) * SPRING
+        velocities[i3 + 2] += (0 - positions[i3 + 2]) * SPRING
+        velocities[i3] *= DAMP
+        velocities[i3 + 1] *= DAMP
+        velocities[i3 + 2] *= DAMP
+        positions[i3] += velocities[i3]
+        positions[i3 + 1] += velocities[i3 + 1]
+        positions[i3 + 2] += velocities[i3 + 2]
 
-  // 纹路：先连线（连贯黑纹），再画点
-  ctx.lineWidth = 2.6
-  ctx.strokeStyle = BLACK
-  const dispArr = new Array(parts.length)
-  for (let i = 0; i < parts.length; i++) {
-    dispArr[i] = stepPhysics(parts[i], breathe)
-  }
-  for (let i = 0; i < parts.length; i++) {
-    const p = parts[i]
-    if (p.linkPrev >= 0) {
-      const q = parts[p.linkPrev]
-      const avg = (dispArr[i] + dispArr[p.linkPrev]) / 2
-      ctx.globalAlpha = 0.95 * Math.max(0, 1 - avg / 110)
-      ctx.beginPath()
-      ctx.moveTo(p.x, p.y)
-      ctx.lineTo(q.x, q.y)
-      ctx.stroke()
+        disp[i] = Math.hypot(tx - positions[i3], ty - positions[i3 + 1])
+
+        // 扰动时自转，回弹后归位
+        if (disturbed && Math.random() < 0.06) {
+          spinTargets[i3] = (Math.random() - 0.5) * 2.2
+          spinTargets[i3 + 1] = (Math.random() - 0.5) * 2.2
+          spinTargets[i3 + 2] = (Math.random() - 0.5) * 2.2
+        } else if (!disturbed) {
+          spinTargets[i3] *= 0.97
+          spinTargets[i3 + 1] *= 0.97
+          spinTargets[i3 + 2] *= 0.97
+        }
+        spins[i3] += (spinTargets[i3] - spins[i3]) * 0.12
+        spins[i3 + 1] += (spinTargets[i3 + 1] - spins[i3 + 1]) * 0.12
+        spins[i3 + 2] += (spinTargets[i3 + 2] - spins[i3 + 2]) * 0.12
+
+        dummy.position.set(positions[i3], positions[i3 + 1], positions[i3 + 2])
+        dummy.rotation.set(spins[i3], spins[i3 + 1], spins[i3 + 2])
+        dummy.updateMatrix()
+        mesh.setMatrixAt(i, dummy.matrix)
+      }
+      mesh.instanceMatrix.needsUpdate = true
+
+      // 受扰方块变亮（视觉反馈）
+      if (mesh.instanceColor) {
+        for (let i = 0; i < count; i++) {
+          const isInk = homeArr[i * 3 + 2] === 1
+          if (disp[i] > 0.35) {
+            color.copy(isInk ? BLACK : RED).multiplyScalar(1.35)
+          } else {
+            color.copy(isInk ? BLACK : RED)
+          }
+          mesh.setColorAt(i, color)
+        }
+        mesh.instanceColor.needsUpdate = true
+      }
     }
-    ctx.globalAlpha = 0.95
-    ctx.fillStyle = BLACK
-    ctx.beginPath()
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-    ctx.fill()
   }
-  ctx.globalAlpha = 1
-  raf = requestAnimationFrame(draw)
-}
+}, pointerState)
 
-function resize() {
-  const canvas = canvasRef.value
-  const dpr = window.devicePixelRatio || 1
-  W = canvas.clientWidth
-  H = canvas.clientHeight
-  cx = W / 2
-  cy = H / 2
-  canvas.width = W * dpr
-  canvas.height = H * dpr
-  ctx = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
-}
-
-function onMove(e) {
-  const rect = canvasRef.value.getBoundingClientRect()
-  mouse.x = e.clientX - rect.left
-  mouse.y = e.clientY - rect.top
-  mouse.active = true
-}
-
-function onTouch(e) {
-  const t = e.touches[0]
-  const rect = canvasRef.value.getBoundingClientRect()
-  mouse.x = t.clientX - rect.left
-  mouse.y = t.clientY - rect.top
-  mouse.active = true
-}
-
-function onLeave() {
-  mouse.active = false
-  mouse.x = -999
-  mouse.y = -999
-}
-
+// ---- 鼠标/触摸事件（写入共享状态） ----
 onMounted(() => {
-  resize()
-  spawn()
-  draw()
-  window.addEventListener('resize', resize)
-  canvasRef.value.addEventListener('mousemove', onMove)
-  canvasRef.value.addEventListener('mouseleave', onLeave)
-  canvasRef.value.addEventListener('touchmove', onTouch, { passive: true })
-  canvasRef.value.addEventListener('touchend', onLeave)
+  const zone = el.value
+  if (!zone) return
+  zone.addEventListener('pointermove', zonePointer)
+  zone.addEventListener('pointerleave', zoneLeave)
+  zone.addEventListener('touchmove', zonePointer, { passive: true })
+  zone.addEventListener('touchend', zoneLeave)
 })
 
 onBeforeUnmount(() => {
-  cancelAnimationFrame(raf)
-  window.removeEventListener('resize', resize)
-  canvasRef.value?.removeEventListener('mousemove', onMove)
-  canvasRef.value?.removeEventListener('mouseleave', onLeave)
-  canvasRef.value?.removeEventListener('touchmove', onTouch)
-  canvasRef.value?.removeEventListener('touchend', onLeave)
+  const zone = el.value
+  if (!zone) return
+  zone.removeEventListener('pointermove', zonePointer)
+  zone.removeEventListener('pointerleave', zoneLeave)
+  zone.removeEventListener('touchmove', zonePointer)
+  zone.removeEventListener('touchend', zoneLeave)
 })
+
+function zonePointer(e) {
+  const rect = el.value.getBoundingClientRect()
+  pointerState.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+  pointerState.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+  pointerState.active = true
+}
+
+function zoneLeave() {
+  pointerState.active = false
+}
 </script>
 
 <template>
-  <canvas ref="canvasRef" class="fx-canvas"></canvas>
+  <div ref="el" class="three-zone"></div>
 </template>
