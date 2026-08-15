@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { settings } from '../stores/settings'
 import { themeColors } from './threeTheme'
 
-export function useThree(factory) {
+export function useThree(factory, extra) {
   const el = ref(null)
   let renderer = null
   let scene = null
@@ -23,7 +23,7 @@ export function useThree(factory) {
     camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100)
     camera.position.z = 10
 
-    handlers = factory({ scene, camera }) || {}
+    handlers = factory({ scene, camera }, extra) || {}
 
     function resize() {
       const w = el.value.clientWidth
