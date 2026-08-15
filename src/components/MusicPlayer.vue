@@ -404,6 +404,23 @@ onBeforeUnmount(() => {
           <button v-if="adjust !== 0" class="mp-btn mp-adjust-reset" title="重置校准" @click="resetAdjust">重置</button>
         </div>
       </div>
+
+      <div class="mp-tracks">
+        <p class="mp-tracks-title">播放列表 <span class="mp-tracks-count">{{ tracks.length }}</span></p>
+        <div class="mp-tracks-list">
+          <button
+            v-for="(t, i) in tracks"
+            :key="t.slug"
+            class="mp-item"
+            :class="{ on: i === index }"
+            @click="playIndex(i)"
+          >
+            <span class="mp-item-title">{{ t.title }}</span>
+            <span class="mp-item-artist">{{ t.artist }}</span>
+          </button>
+          <p v-if="!tracks.length" class="mp-empty">暂无音乐，先上传一首吧</p>
+        </div>
+      </div>
     </div>
 
     <div class="mp-progress" @click="seek">
@@ -423,26 +440,7 @@ onBeforeUnmount(() => {
         <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="mode = mode === 'list' ? 'loop' : mode === 'loop' ? 'random' : 'list'">
           {{ mode === 'random' ? '⇄' : mode === 'loop' ? '⟳' : '≡' }}
         </button>
-        <button class="mp-btn" :title="showList ? '收起列表' : '播放列表'" @click="showList = !showList">
-          {{ showList ? '▾' : '☰' }}
-        </button>
       </div>
     </div>
-
-    <transition name="controls-fade">
-      <div v-if="showList" class="mp-list">
-        <button
-          v-for="(t, i) in tracks"
-          :key="t.slug"
-          class="mp-item"
-          :class="{ on: i === index }"
-          @click="playIndex(i)"
-        >
-          <span class="mp-item-title">{{ t.title }}</span>
-          <span class="mp-item-artist">{{ t.artist }}</span>
-        </button>
-        <p v-if="!tracks.length" class="mp-empty">暂无音乐，先上传一首吧</p>
-      </div>
-    </transition>
   </div>
 </template>

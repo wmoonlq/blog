@@ -3585,9 +3585,19 @@ img {
    ============================================================ */
 .mp-body {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 28px;
+  grid-template-columns: 240px 1fr 220px;
+  gap: 24px;
   margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .mp-body {
+    grid-template-columns: 240px 1fr;
+  }
+  .mp-tracks {
+    grid-column: 1 / -1;
+    max-height: 220px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3957,4 +3967,90 @@ img {
 
 .settings-back:hover {
   color: var(--accent);
+}
+
+
+/* 右侧曲目列表 */
+.mp-tracks {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-left: 1px solid var(--divider);
+  padding-left: 20px;
+}
+
+.mp-tracks-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mp-tracks-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-tracks-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 4px;
+}
+
+.mp-tracks-list .mp-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 8px 8px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background var(--transition);
+}
+
+.mp-tracks-list .mp-item:hover {
+  background: var(--hover-bg);
+}
+
+.mp-tracks-list .mp-item.on {
+  background: var(--accent-strong);
+}
+
+.mp-tracks-list .mp-item-title {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.mp-tracks-list .mp-item.on .mp-item-title {
+  color: var(--accent);
+}
+
+.mp-tracks-list .mp-item-artist {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.mp-tracks-list .mp-empty {
+  padding: 16px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
