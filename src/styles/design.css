@@ -3123,3 +3123,39 @@ img {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
+
+
+/* ============================================================
+   自定义背景图片
+   ============================================================ */
+.bg-image-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.bg-tint-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg);
+  opacity: 0.78;
+  transition: background var(--transition);
+}
+
+
+.bg-settings {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--divider);
+}
+
+.bg-input-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { getVideoPoster } from '../utils/videoPoster'
 
 const props = defineProps({
   source: { type: String, required: true },
@@ -9,6 +10,7 @@ const props = defineProps({
 
 const wrapRef = ref(null)
 const videoRef = ref(null)
+const autoPoster = ref('')
 const playing = ref(false)
 const muted = ref(false)
 const current = ref(0)
@@ -129,9 +131,14 @@ function onMouseMove() {
   }, 2400)
 }
 
-onMounted(() => {
+const effectivePoster = computed(() => props.poster || autoPoster.value)
+
+onMounted(async () => {
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('fullscreenchange', onFsChange)
+  if (!props.poster && !props.embed) {
+    autoPoster.value = await getVideoPoster(props.source)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -153,7 +160,7 @@ onBeforeUnmount(() => {
         v-if="!embed"
         ref="videoRef"
         :src="source"
-        :poster="poster || undefined"
+        :poster="effectivePoster || undefined"
         playsinline
         preload="metadata"
         @play="onPlay"

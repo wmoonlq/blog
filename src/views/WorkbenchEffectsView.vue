@@ -18,6 +18,19 @@ import MeteorFlow from '../components/effects/MeteorFlow.vue'
 import AntiGravityEffect from '../components/effects/AntiGravityEffect.vue'
 import ParticleRose from '../components/effects/ParticleRose.vue'
 import { effects, toggleParticleTrail } from '../stores/effects'
+import { settings, setBackground } from '../stores/settings'
+import { ref } from 'vue'
+
+const bgInput = ref(settings.background)
+
+function applyBackground() {
+  setBackground(bgInput.value.trim())
+}
+
+function clearBackground() {
+  bgInput.value = ''
+  setBackground('')
+}
 
 const effectsList = [
   { title: '打字机', sub: '逐字敲出，光标闪烁', component: TypewriterEffect },
@@ -60,6 +73,29 @@ const effectsList = [
               :aria-pressed="effects.particleTrail"
               @click="toggleParticleTrail(!effects.particleTrail)"
             ></button>
+          </div>
+          <div class="bg-settings">
+            <div class="switch-row">
+              <span class="switch-label">背景图片</span>
+              <button
+                v-if="settings.background"
+                class="advanced-toggle"
+                @click="clearBackground"
+              >清除</button>
+            </div>
+            <div class="bg-input-row">
+              <input
+                v-model="bgInput"
+                class="input"
+                type="url"
+                placeholder="图片 URL（https://…）"
+                @keydown.enter="applyBackground"
+              />
+              <button class="btn btn-sm" @click="applyBackground">应用</button>
+            </div>
+            <p class="token-hint">
+              全站背景将显示该图片，正文区域自动加遮罩保持可读；设置保存在本地。
+            </p>
           </div>
         </div>
       </section>

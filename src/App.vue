@@ -5,6 +5,7 @@ import GlobalParticleTrail from './components/GlobalParticleTrail.vue'
 import ScrollProgress from './components/ScrollProgress.vue'
 import BackToTop from './components/BackToTop.vue'
 import SearchModal from './components/SearchModal.vue'
+import BgImage from './components/BgImage.vue'
 import { effects } from './stores/effects'
 import { getAllPosts } from './utils/posts'
 import { getAllNotes } from './utils/notes'
@@ -14,6 +15,7 @@ const noteCount = computed(() => getAllNotes().length)
 </script>
 
 <template>
+  <BgImage />
   <ScrollProgress />
   <GlobalParticleTrail v-if="effects.particleTrail" />
   <BlogNav />

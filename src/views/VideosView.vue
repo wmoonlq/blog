@@ -3,6 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import { getAllVideos, isBilibili } from '../utils/videos'
 import { renderMarkdown } from '../utils/markdown'
 import VideoPlayer from '../components/VideoPlayer.vue'
+import VideoThumb from '../components/VideoThumb.vue'
 
 const videos = computed(() => getAllVideos())
 const active = ref(null)
@@ -90,13 +91,7 @@ function isEmbed(v) {
             :class="{ on: active && active.slug === v.slug }"
             @click="play(v)"
           >
-            <span
-              class="video-card-thumb"
-              :style="v.poster ? { backgroundImage: `url(${v.poster})` } : {}"
-            >
-              <span class="video-card-play">▶</span>
-              <span v-if="isEmbed(v)" class="video-card-tag">外链</span>
-            </span>
+            <VideoThumb :source="v.source" :poster="v.poster" :embed="isEmbed(v)" />
             <span class="video-card-title">{{ v.title }}</span>
             <span class="video-card-date">{{ v.date }}</span>
           </button>
