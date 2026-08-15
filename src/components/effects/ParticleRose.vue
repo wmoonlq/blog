@@ -4,10 +4,10 @@ import * as THREE from 'three'
 import { useThree } from '../../utils/useThree'
 import { hexToRgb, themeColors } from '../../utils/threeTheme'
 
-// 拖拽旋转状态（可变对象，factory 通过 useThree 第二参数引用）
+// 拖拽旋转 + 点击爆炸状态（可变对象，factory 通过 useThree 第二参数引用）
 const drag = { rotY: 0 }
 
-const el = useThree(({ scene, camera }, drag) => {
+const el = useThree(({ scene, camera }, state) => {
   camera.position.set(0, 0.4, 6.5)
   camera.lookAt(0, 0, 0)
 
@@ -15,6 +15,7 @@ const el = useThree(({ scene, camera }, drag) => {
   const current = new Float32Array(COUNT * 3)
   const target = new Float32Array(COUNT * 3)
   const scatter = new Float32Array(COUNT * 3)
+  const velocities = new Float32Array(COUNT * 3)
   const colors = new Float32Array(COUNT * 3)
 
   // 目标颜色角色：0 = 花瓣(accent)，1 = 花蕊(text)
@@ -82,31 +83,53 @@ const el = useThree(({ scene, camera }, drag) => {
   group.add(points)
   scene.add(group)
 
-  // 动画状态机：gather(4s) → hold(5s) → scatter(4s)
-  const CYCLE = 13
+  let explodeTimer = null
+
+  function explode() {
+    // 每个粒子沿随机方向获得冲量
+    for (let i = 0; i < COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      const speed = 0.18 + Math.random() * 0.4
+      velocities[i * 3] = Math.sin(phi) * Math.cos(theta) * speed
+      velocities[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * speed
+      velocities[i * 3 + 2] = Math.cos(phi) * speed
+    }
+    state.mode = 'explode'
+    if (explodeTimer) clearTimeout(explodeTimer)
+    // 2.8 秒后重新聚拢
+    explodeTimer = setTimeout(() => {
+      state.mode = 'gather'
+    }, 2800)
+  }
+
+  state.explode = explode
 
   return {
     onResize() {},
     update: (t) => {
-      const phase = t % CYCLE
-      let k = 0.055
-      if (phase < 4) {
-        k = 0.035 + (phase / 4) * 0.03 // gather 逐渐加速
-      } else if (phase < 9) {
-        k = 0.03 // hold，保持轻微呼吸
-        const breath = 1 + Math.sin(t * 1.4) * 0.035
-        group.scale.setScalar(breath)
-      } else {
-        k = 0.028 // scatter 散开
+      if (state.mode === 'explode') {
+        // 惯性飞散，带阻尼
+        const arr = geo.attributes.position.array
+        for (let i = 0; i < COUNT * 3; i++) {
+          arr[i] += velocities[i]
+          velocities[i] *= 0.96
+        }
+        geo.attributes.position.needsUpdate = true
         group.scale.setScalar(1)
+      } else {
+        // 聚拢成玫瑰
+        const arr = geo.attributes.position.array
+        const k = 0.045 + Math.sin(t * 0.5) * 0.01
+        for (let i = 0; i < COUNT * 3; i++) {
+          arr[i] += (target[i] - arr[i]) * k
+        }
+        geo.attributes.position.needsUpdate = true
+        const breath = 1 + Math.sin(t * 1.4) * 0.03
+        group.scale.setScalar(breath)
       }
-      const to = phase < 9 ? target : scatter
-      for (let i = 0; i < current.length; i++) {
-        current[i] += (to[i] - current[i]) * k
-      }
-      geo.attributes.position.needsUpdate = true
 
-      group.rotation.y = t * 0.28 + drag.rotY
+      group.rotation.y = t * 0.28 + state.rotY
       group.rotation.x = 0.25 + Math.sin(t * 0.3) * 0.08
       group.position.y = Math.sin(t * 0.5) * 0.12
     },
@@ -118,7 +141,33 @@ const el = useThree(({ scene, camera }, drag) => {
 }, drag)
 
 let dragging = false
+let moved = false
+let downX = 0
+let downY = 0
 let lastX = 0
+
+function onDown(e) {
+  dragging = true
+  moved = false
+  downX = e.clientX
+  downY = e.clientY
+  lastX = e.clientX
+}
+
+function onMove(e) {
+  if (!dragging) return
+  const dx = e.clientX - lastX
+  lastX = e.clientX
+  if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 6) moved = true
+  drag.rotY += dx * 0.012
+}
+
+function onUp() {
+  if (!moved && dragging) {
+    drag.explode && drag.explode()
+  }
+  dragging = false
+}
 
 onMounted(() => {
   const zone = el.value
@@ -135,21 +184,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('pointermove', onMove)
   window.removeEventListener('pointerup', onUp)
 })
-
-function onDown(e) {
-  dragging = true
-  lastX = e.clientX
-}
-
-function onMove(e) {
-  if (!dragging) return
-  drag.rotY += (e.clientX - lastX) * 0.012
-  lastX = e.clientX
-}
-
-function onUp() {
-  dragging = false
-}
 </script>
 
 <template>
