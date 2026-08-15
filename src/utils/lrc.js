@@ -5,6 +5,7 @@ export function parseLRC(text) {
     const matches = [...raw.matchAll(re)]
     if (!matches.length) continue
     const content = raw.replace(re, '').trim()
+    if (!content) continue // 跳过空白/元数据行
     for (const m of matches) {
       const min = parseInt(m[1], 10)
       const sec = parseInt(m[2], 10)
