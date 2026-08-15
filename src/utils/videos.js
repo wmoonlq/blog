@@ -17,6 +17,8 @@ export function getAllVideos() {
         source: data.source || '',
         type: data.type || 'video',
         poster: data.poster || '',
+        category: data.category || '未分类',
+        collection: data.collection || '',
         content
       }
     })
