@@ -7,115 +7,143 @@ let ctx = null
 let raf = null
 let W = 0
 let H = 0
-let groundY = 0
+let cx = 0
+let cy = 0
+let rot = 0
 const mouse = { x: -999, y: -999, active: false }
 
-const GRAVITY = 0.14
-const LIFT = 0.3
-const FIELD_R = 110
-const DRAG = 0.92
-const WALL_BOUNCE = -0.55
+const FIELD_R = 130
+const PUSH = 0.9
+const SPRING = 0.035
+const DAMP = 0.9
+
+const PALETTE = ['#7F0000', '#B71C1C', '#C62828', '#D32F2F', '#E53935']
+const CORE_COLOR = '#FF5252'
 
 const parts = []
-const COUNT = 70
 
-function resize() {
-  const canvas = canvasRef.value
-  const dpr = window.devicePixelRatio || 1
-  W = canvas.clientWidth
-  H = canvas.clientHeight
-  groundY = H - 14
-  canvas.width = W * dpr
-  canvas.height = H * dpr
-  ctx = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
+function deg(angle) {
+  return (angle * Math.PI) / 180
+}
+
+// 生成六芒星（两个等边三角形）+ 瞳孔环 + 内环 的采样点
+function eyePoints(R) {
+  const pts = []
+  const pushEdge = (p1, p2, seg) => {
+    for (let i = 0; i < seg; i++) {
+      const t = i / seg
+      pts.push({
+        x: p1.x + (p2.x - p1.x) * t,
+        y: p1.y + (p2.y - p1.y) * t
+      })
+    }
+  }
+  const tri = (angles) => {
+    const vs = angles.map((a) => ({ x: Math.cos(deg(a)) * R, y: Math.sin(deg(a)) * R }))
+    for (let i = 0; i < 3; i++) {
+      pushEdge(vs[i], vs[(i + 1) % 3], 22)
+    }
+  }
+  tri([0, 120, 240])
+  tri([60, 180, 300])
+
+  const ring = (radius, n) => {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2
+      pts.push({ x: Math.cos(a) * radius, y: Math.sin(a) * radius })
+    }
+  }
+  ring(R * 0.44, 46) // 内环
+  ring(R * 0.2, 30) // 瞳孔环
+  return pts
 }
 
 function spawn() {
+  const R = Math.min(W, H) * 0.36
+  const pts = eyePoints(R)
+  const pad = 2
   parts.length = 0
-  for (let i = 0; i < COUNT; i++) {
+  pts.forEach((p) => {
+    const core = Math.hypot(p.x, p.y) < R * 0.28
     parts.push({
-      x: 10 + Math.random() * (W - 20),
-      y: 10 + Math.random() * (H - 30),
+      r: Math.hypot(p.x, p.y),
+      theta: Math.atan2(p.y, p.x),
+      x: p.x,
+      y: p.y,
       vx: 0,
       vy: 0,
-      r: 1.2 + Math.random() * 2.2,
-      accent: Math.random() < 0.2
+      size: 1.4 + Math.random() * 1.6,
+      color: core ? CORE_COLOR : PALETTE[Math.floor(Math.random() * PALETTE.length)],
+      scatterX: (Math.random() - 0.5) * W,
+      scatterY: (Math.random() - 0.5) * H
     })
-  }
+  })
+  // 预留几处留白，避免过于密集
+  void pad
 }
 
 function draw() {
-  const s = getComputedStyle(document.documentElement)
-  const accent = s.getPropertyValue('--accent').trim() || '#B68D73'
-  const text = s.getPropertyValue('--text').trim() || '#1A1816'
-
   ctx.clearRect(0, 0, W, H)
 
+  rot += 0.0035 // 缓慢旋转
+
+  // 鼠标反重力场指示
   if (mouse.active) {
     ctx.globalAlpha = 0.08
-    ctx.fillStyle = accent
+    ctx.fillStyle = '#C62828'
     ctx.beginPath()
     ctx.arc(mouse.x, mouse.y, FIELD_R, 0, Math.PI * 2)
     ctx.fill()
     ctx.globalAlpha = 1
   }
 
-  for (const p of parts) {
-    const dx = mouse.x - p.x
-    const dy = mouse.y - p.y
-    const d = Math.hypot(dx, dy)
-    const inField = mouse.active && d < FIELD_R
+  // 轻微呼吸
+  const breathe = 1 + Math.sin(rot * 3.2) * 0.015
 
-    if (inField) {
-      const f = 1 - d / FIELD_R
-      p.vy -= LIFT * f
-      const nx = dx / (d || 1)
-      const ny = dy / (d || 1)
-      p.vx += nx * 0.06 * f
-      p.vy += ny * 0.06 * f
-    } else {
-      p.vy += GRAVITY
+  for (const p of parts) {
+    // 目标位置：图案本地坐标 + 旋转 + 呼吸
+    const targetX = cx + Math.cos(p.theta + rot) * p.r * breathe
+    const targetY = cy + Math.sin(p.theta + rot) * p.r * breathe
+
+    // 反重力场：推开（鼠标在目标位置附近时）
+    const dxm = mouse.x - p.x
+    const dym = mouse.y - p.y
+    const dm = Math.hypot(dxm, dym)
+    if (mouse.active && dm < FIELD_R && dm > 0.001) {
+      const f = (1 - dm / FIELD_R) * PUSH
+      p.vx += (dxm / dm) * f
+      p.vy += (dym / dm) * f - 0.08 // 略带上浮
     }
 
-    p.vx *= DRAG
-    p.vy *= DRAG
+    // 弹簧回弹到目标
+    p.vx += (targetX - p.x) * SPRING
+    p.vy += (targetY - p.y) * SPRING
+    p.vx *= DAMP
+    p.vy *= DAMP
     p.x += p.vx
     p.y += p.vy
 
-    if (p.y > groundY) {
-      p.y = groundY
-      p.vy = 0
-      p.vx *= 0.7
-    }
-    if (p.x < 2) {
-      p.x = 2
-      p.vx *= WALL_BOUNCE
-    }
-    if (p.x > W - 2) {
-      p.x = W - 2
-      p.vx *= WALL_BOUNCE
-    }
-    if (p.y < 2) {
-      p.y = 2
-      p.vy *= WALL_BOUNCE
-    }
-
-    ctx.fillStyle = p.accent ? accent : text
-    ctx.globalAlpha = inField ? 0.95 : 0.75
+    ctx.fillStyle = p.color
+    ctx.globalAlpha = 0.92
     ctx.beginPath()
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.globalAlpha = 1
-
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--divider').trim() || 'rgba(0,0,0,0.05)'
-  ctx.beginPath()
-  ctx.moveTo(8, groundY + 0.5)
-  ctx.lineTo(W - 8, groundY + 0.5)
-  ctx.stroke()
-
   raf = requestAnimationFrame(draw)
+}
+
+function resize() {
+  const canvas = canvasRef.value
+  const dpr = window.devicePixelRatio || 1
+  W = canvas.clientWidth
+  H = canvas.clientHeight
+  cx = W / 2
+  cy = H / 2
+  canvas.width = W * dpr
+  canvas.height = H * dpr
+  ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
 }
 
 function onMove(e) {
