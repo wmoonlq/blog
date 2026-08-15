@@ -4,8 +4,18 @@ import { getAllMusic } from '../utils/music'
 import MusicPlayer from '../components/MusicPlayer.vue'
 import MediaManager from '../components/MediaManager.vue'
 import { checkPassword, getToken, deleteFile } from '../utils/githubFiles'
+import { getLocalUploads, addLocalUpload, removeLocalUpload, isLocalUpload } from '../utils/localMedia'
 
-const tracks = computed(() => getAllMusic())
+const allTracks = computed(() => {
+  const built = getAllMusic()
+  const builtSlugs = new Set(built.map((m) => m.slug))
+  const local = getLocalUploads()
+    .filter((u) => u.kind === 'music' && !builtSlugs.has(u.slug))
+    .map((u) => ({ ...u, pending: true, content: '' }))
+  return [...local, ...built]
+})
+
+const tracks = allTracks
 const showUpload = ref(false)
 const showManage = ref(false)
 const deleting = ref(null)
@@ -36,14 +46,25 @@ async function confirmDelete() {
   }
   if (!window.confirm(`确认删除「${deleting.value.title}」？该操作会同时删除音频文件和元数据。`)) return
   try {
+    if (isLocalUpload(deleting.value.slug)) {
+      removeLocalUpload(deleting.value.slug)
+      deleteMsg.value = '已删除（待发布条目）'
+      deleting.value = null
+      return
+    }
     const filePath = `public/music/${deleting.value.source.split('/').pop()}`
     await deleteFile(filePath, `docs: delete music ${deleting.value.slug}`, token)
     await deleteFile(`src/music/${deleting.value.slug}.md`, `docs: delete music meta ${deleting.value.slug}`, token)
+    removeLocalUpload(deleting.value.slug)
     deleteMsg.value = '已删除，等待自动构建发布后刷新生效'
     deleting.value = null
   } catch (e) {
     deleteMsg.value = e.message
   }
+}
+
+function onUploaded(item) {
+  addLocalUpload({ ...item, kind: 'music' })
 }
 </script>
 
@@ -70,6 +91,7 @@ async function confirmDelete() {
       accept="audio/mpeg,audio/ogg,audio/wav,audio/flac,audio/aac"
       :max-mb="30"
       style="margin-bottom: 32px"
+      @uploaded="onUploaded"
     />
 
     <div v-if="deleting" class="delete-bar">
@@ -96,7 +118,7 @@ async function confirmDelete() {
       <div v-if="showManage && tracks.length" class="mp-manage">
         <p class="mp-manage-title">管理曲目</p>
         <div v-for="t in tracks" :key="t.slug" class="mp-manage-row">
-          <span class="mp-manage-name">{{ t.title }}</span>
+          <span class="mp-manage-name">{{ t.title }}<span v-if="t.pending" class="video-card-pending" style="position: static; margin-left: 8px">待发布</span></span>
           <button class="btn btn-sm" @click="startDelete(t)">删除</button>
         </div>
       </div>

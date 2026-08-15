@@ -119,7 +119,15 @@ async function upload() {
     progress.value = 100
 
     msg.value = '上传成功，等待自动构建发布'
-    emit('uploaded')
+    emit('uploaded', {
+      slug: mdName.replace(/\.md$/, ''),
+      title: t,
+      date: new Date().toISOString().slice(0, 10),
+      source: `/blog/${props.mediaDir.replace('public/', '')}/${name}`,
+      category: category.value.trim(),
+      collection: collection.value.trim(),
+      artist: artist.value.trim()
+    })
     resetForm()
   } catch (e) {
     msg.value = e.message

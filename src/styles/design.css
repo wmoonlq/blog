@@ -3563,3 +3563,18 @@ img {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
+
+
+/* 待发布角标 */
+.video-card-pending {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+}

@@ -6,8 +6,19 @@ import VideoPlayer from '../components/VideoPlayer.vue'
 import VideoThumb from '../components/VideoThumb.vue'
 import MediaManager from '../components/MediaManager.vue'
 import { checkPassword, getToken, deleteFile } from '../utils/githubFiles'
+import { getLocalUploads, addLocalUpload, removeLocalUpload, isLocalUpload } from '../utils/localMedia'
 
-const videos = computed(() => getAllVideos())
+// 构建中的本地上传条目合并进列表，刷新后由真实数据替代
+const allVideos = computed(() => {
+  const built = getAllVideos()
+  const builtSlugs = new Set(built.map((v) => v.slug))
+  const local = getLocalUploads()
+    .filter((u) => u.kind === 'video' && !builtSlugs.has(u.slug))
+    .map((u) => ({ ...u, pending: true, content: '' }))
+  return [...local, ...built]
+})
+
+const videos = allVideos
 const active = ref(null)
 const activeCategory = ref('')
 const showUpload = ref(false)
@@ -18,14 +29,14 @@ const deleteMsg = ref('')
 
 const categories = computed(() => {
   const map = new Map()
-  videos.value.forEach((v) => map.set(v.category, (map.get(v.category) || 0) + 1))
+  allVideos.value.forEach((v) => map.set(v.category || '未分类', (map.get(v.category || '未分类') || 0) + 1))
   return [...map.entries()]
 })
 
 const filtered = computed(() =>
   activeCategory.value
-    ? videos.value.filter((v) => v.category === activeCategory.value)
-    : videos.value
+    ? allVideos.value.filter((v) => (v.category || '未分类') === activeCategory.value)
+    : allVideos.value
 )
 
 const collections = computed(() => {
@@ -76,15 +87,28 @@ async function confirmDelete() {
   if (!window.confirm(`确认删除「${deleting.value.title}」？该操作会同时删除视频文件和元数据。`)) return
 
   try {
+    // 本地待发布条目：仅清除本地记录
+    if (isLocalUpload(deleting.value.slug)) {
+      removeLocalUpload(deleting.value.slug)
+      if (active.value && active.value.slug === deleting.value.slug) active.value = null
+      deleteMsg.value = '已删除（待发布条目）'
+      deleting.value = null
+      return
+    }
     // 从 source 推导 public 文件路径：/blog/videos/xxx.mp4 → public/videos/xxx.mp4
     const filePath = `public/videos/${deleting.value.source.split('/').pop()}`
     await deleteFile(filePath, `docs: delete video ${deleting.value.slug}`, token)
     await deleteFile(`src/videos/${deleting.value.slug}.md`, `docs: delete video meta ${deleting.value.slug}`, token)
+    removeLocalUpload(deleting.value.slug)
     deleteMsg.value = '已删除，等待自动构建发布后刷新生效'
     deleting.value = null
   } catch (e) {
     deleteMsg.value = e.message
   }
+}
+
+function onUploaded(item) {
+  addLocalUpload({ ...item, kind: 'video' })
 }
 </script>
 
@@ -111,6 +135,7 @@ async function confirmDelete() {
       accept="video/mp4,video/webm,video/ogg"
       :max-mb="50"
       style="margin-bottom: 32px"
+      @uploaded="onUploaded"
     />
 
     <!-- 删除确认条 -->
@@ -172,6 +197,7 @@ async function confirmDelete() {
             @click="showManage ? startDelete(v) : play(v)"
           >
             <VideoThumb :source="v.source" :poster="v.poster" :embed="isEmbed(v)" />
+            <span v-if="v.pending" class="video-card-pending">待发布</span>
             <span v-if="showManage" class="video-card-del">✕ 删除</span>
             <span class="video-card-title">{{ v.title }}</span>
             <span class="video-card-date">{{ v.date }}</span>
