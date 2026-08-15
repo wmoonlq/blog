@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue'
-import { checkPassword, getToken, fileToBase64, uploadFile } from '../utils/githubFiles'
+import { ref, computed, onBeforeUnmount } from 'vue'
+import { checkPassword, getToken, fileToBase64Worker, terminateWorker, uploadFileXhr } from '../utils/githubFiles'
 
 const props = defineProps({
   kind: { type: String, required: true }, // 'video' | 'music'
@@ -20,6 +20,14 @@ const category = ref('')
 const collection = ref('')
 const uploading = ref(false)
 const msg = ref('')
+const phase = ref('') // 'read' | 'upload'
+const progress = ref(0) // 0-100
+
+const progressLabel = computed(() => {
+  if (!uploading.value) return ''
+  if (phase.value === 'read') return `后台读取 ${progress.value.toFixed(0)}%`
+  return `上传中 ${progress.value.toFixed(0)}%`
+})
 
 function fillPwd() {
   pwd.value = '123456'
@@ -64,19 +72,32 @@ async function upload() {
   }
 
   uploading.value = true
+  progress.value = 0
   try {
     const ext = (file.value.name.match(/\.[a-zA-Z0-9]+$/) || ['.mp4'])[0].toLowerCase()
     const name = `${props.kind}-${Date.now()}${ext}`
-    const content = await fileToBase64(file.value)
+    const ts = Date.now()
 
-    await uploadFile({
+    // 阶段 1：Worker 后台分块读取 base64（0-45%）
+    phase.value = 'read'
+    const content = await fileToBase64Worker(file.value, (done, total) => {
+      progress.value = total ? (done / total) * 45 : 0
+    })
+
+    // 阶段 2：XHR 上传文件（45-80%）
+    phase.value = 'upload'
+    await uploadFileXhr({
       path: `${props.mediaDir}/${name}`,
       content,
       message: `feat: upload ${props.kind} ${name}`,
-      token
+      token,
+      onProgress: (loaded, total) => {
+        progress.value = 45 + (total ? (loaded / total) * 35 : 0)
+      }
     })
+    progress.value = 80
 
-    // 元数据 md
+    // 阶段 3：元数据 md（80-100%）
     const t = title.value.trim() || name
     const lines = [`---`, `title: "${t}"`, `date: "${new Date().toISOString().slice(0, 10)}"`, `source: "/blog/${props.mediaDir.replace('public/', '')}/${name}"`]
     if (props.kind === 'video') {
@@ -88,13 +109,14 @@ async function upload() {
     lines.push(`type: "${props.kind}"`, `---`, '', t)
 
     const mdContent = btoa(unescape(encodeURIComponent(lines.join('\n'))))
-    const mdName = `${props.kind}-${Date.now()}.md`
-    await uploadFile({
+    const mdName = `${props.kind}-${ts}.md`
+    await uploadFileXhr({
       path: `${props.metaDir}/${mdName}`,
       content: mdContent,
       message: `feat: add ${props.kind} meta ${mdName}`,
       token
     })
+    progress.value = 100
 
     msg.value = '上传成功，等待自动构建发布'
     emit('uploaded')
@@ -103,14 +125,20 @@ async function upload() {
     msg.value = e.message
   } finally {
     uploading.value = false
+    phase.value = ''
+    terminateWorker()
   }
 }
+
+onBeforeUnmount(() => {
+  terminateWorker()
+})
 </script>
 
 <template>
   <section class="editor-card media-manager">
     <h2 class="effect-title">上传{{ kind === 'video' ? '视频' : '音乐' }}</h2>
-    <p class="effect-sub">文件将保存至 GitHub 仓库，需操作密码（防止人机刷取）</p>
+    <p class="effect-sub">文件将保存至 GitHub 仓库，需操作密码（防止人机刷取）；后台线程读取，不卡页面</p>
 
     <div class="field">
       <label class="field-label">文件</label>
@@ -149,6 +177,14 @@ async function upload() {
         {{ uploading ? '上传中…' : '上传' }}
       </button>
     </div>
+
+    <div v-if="uploading" class="upload-progress">
+      <div class="upload-progress-bar">
+        <div class="upload-progress-fill" :style="{ width: `${progress}%` }"></div>
+      </div>
+      <p class="upload-progress-label">{{ progressLabel }}</p>
+    </div>
+
     <p v-if="msg" class="editor-msg">{{ msg }}</p>
   </section>
 </template>
