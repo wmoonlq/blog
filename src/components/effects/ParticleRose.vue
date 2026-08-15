@@ -1,8 +1,11 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
 import { useThree } from '../../utils/useThree'
 import { hexToRgb, themeColors } from '../../utils/threeTheme'
+
+// 拖拽旋转状态（可变对象，factory 通过 useThree 第二参数引用）
+const drag = { rotY: 0 }
 
 const el = useThree(({ scene, camera }, drag) => {
   camera.position.set(0, 0.4, 6.5)
@@ -112,10 +115,8 @@ const el = useThree(({ scene, camera }, drag) => {
       geo.attributes.color.needsUpdate = true
     }
   }
-})
+}, drag)
 
-// 拖拽旋转
-const drag = { rotY: 0 }
 let dragging = false
 let lastX = 0
 
