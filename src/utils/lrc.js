@@ -52,7 +52,7 @@ export function parseYRC(text) {
       chars.push({
         start: parseInt(m[1], 10) / 1000,
         end: (parseInt(m[1], 10) + parseInt(m[2], 10)) / 1000,
-        char: m[3]
+        char: m[4]
       })
     }
     // 过滤元数据行（如"作词 : 薛之谦"，只有 1 个时间戳组且字符为空格）
