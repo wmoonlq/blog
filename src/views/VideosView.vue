@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { getAllVideos, isBilibili } from '../utils/videos'
 import { renderMarkdown } from '../utils/markdown'
 import VideoPlayer from '../components/VideoPlayer.vue'
@@ -7,9 +7,13 @@ import VideoPlayer from '../components/VideoPlayer.vue'
 const videos = computed(() => getAllVideos())
 const active = ref(null)
 
-function play(video) {
+async function play(video) {
   active.value = video
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  await nextTick()
+  const el = document.querySelector('.video-featured')
+  if (!el) return
+  const top = el.getBoundingClientRect().top + window.scrollY - 88
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
 }
 
 function isEmbed(v) {
