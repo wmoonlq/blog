@@ -67,7 +67,7 @@ async function upload() {
     return
   }
   if (file.value.size > props.maxMB * 1024 * 1024) {
-    msg.value = `文件不能超过 ${props.maxMB}MB`
+    msg.value = `文件不能超过 ${props.maxMB}MB（GitHub 单文件上限）`
     return
   }
 

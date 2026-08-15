@@ -133,7 +133,7 @@ function onUploaded(item) {
       media-dir="public/videos"
       meta-dir="src/videos"
       accept="video/mp4,video/webm,video/ogg"
-      :max-mb="50"
+      :max-mb="100"
       style="margin-bottom: 32px"
       @uploaded="onUploaded"
     />

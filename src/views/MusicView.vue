@@ -89,7 +89,7 @@ function onUploaded(item) {
       media-dir="public/music"
       meta-dir="src/music"
       accept="audio/mpeg,audio/ogg,audio/wav,audio/flac,audio/aac"
-      :max-mb="30"
+      :max-mb="100"
       style="margin-bottom: 32px"
       @uploaded="onUploaded"
     />
