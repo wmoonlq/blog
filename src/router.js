@@ -46,6 +46,11 @@ const router = createRouter({
       component: () => import('./views/TimelineView.vue')
     },
     {
+      path: '/videos',
+      name: 'videos',
+      component: () => import('./views/VideosView.vue')
+    },
+    {
       path: '/about',
       name: 'about',
       component: () => import('./views/AboutView.vue')

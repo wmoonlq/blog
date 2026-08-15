@@ -37,6 +37,16 @@ marked.use({
       const className = lang ? ` class="language-${lang}"` : ''
       const label = lang ? `<span class="code-lang">${escapeHtml(lang)}</span>` : ''
       return `<div class="code-wrap">${label}<button class="code-copy" aria-label="复制代码">复制</button><pre><code${className}>${escapeHtml(text)}</code></pre></div>`
+    },
+    image({ href, title, text }) {
+      const lower = href.toLowerCase()
+      if (lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg')) {
+        const poster = title ? ` poster="${escapeHtml(title)}"` : ''
+        return `<video class="md-video" controls preload="metadata"${poster} src="${escapeHtml(href)}"></video>`
+      }
+      const alt = escapeHtml(text)
+      const t = title ? ` title="${escapeHtml(title)}"` : ''
+      return `<img src="${escapeHtml(href)}" alt="${alt}"${t} />`
     }
   }
 })
