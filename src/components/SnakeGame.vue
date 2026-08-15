@@ -156,12 +156,15 @@ function rr(x, y, size, r) {
 function draw() {
   const canvas = canvasRef.value
   if (!canvas || !ctx) return
+  const s = getComputedStyle(document.documentElement)
+  const accent = s.getPropertyValue('--accent').trim() || '#B68D73'
+  const text = s.getPropertyValue('--text').trim() || '#1A1816'
   ctx.clearRect(0, 0, COLS * CELL, ROWS * CELL)
   if (food) {
-    ctx.fillStyle = '#B68D73'
+    ctx.fillStyle = accent
     rr(food.x * CELL + 4, food.y * CELL + 4, CELL - 8, 8)
   }
-  ctx.fillStyle = '#1A1816'
+  ctx.fillStyle = text
   const gap = 2
   for (let i = snake.length - 1; i >= 0; i--) {
     rr(snake[i].x * CELL + gap, snake[i].y * CELL + gap, CELL - gap * 2, 5)

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { getAllPosts, getPostBySlug } from '../utils/posts'
 import { renderMarkdown } from '../utils/markdown'
 import { readingTime } from '../utils/format'
+import { settings, setFontSize } from '../stores/settings'
 
 const route = useRoute()
 const post = computed(() => getPostBySlug(route.params.slug))
@@ -11,6 +12,9 @@ const html = computed(() => (post.value ? renderMarkdown(post.value.content) : '
 const activeId = ref('')
 const tocObserver = ref(null)
 const rootEl = ref(null)
+const linkCopied = ref(false)
+
+const proseStyle = computed(() => ({ fontSize: `${settings.fontSize}px` }))
 
 const toc = computed(() => {
   if (!html.value) return []
@@ -76,6 +80,16 @@ async function copyCode(btn) {
   }
 }
 
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    linkCopied.value = true
+    setTimeout(() => (linkCopied.value = false), 1600)
+  } catch {
+    /* ignore */
+  }
+}
+
 function onClick(e) {
   const btn = e.target.closest('.code-copy')
   if (btn) copyCode(btn)
@@ -93,10 +107,17 @@ onBeforeUnmount(() => {
     <article v-if="post" ref="rootEl" class="post-layout">
       <div class="article-tools">
         <router-link class="back" :to="{ name: 'home' }">← 全部文章</router-link>
-        <router-link
-          class="edit-link"
-          :to="{ name: 'posts-editor', query: { file: `${post.slug}.md` } }"
-        >编辑</router-link>
+        <div class="article-tools-right">
+          <div class="readsize" aria-label="字号调节">
+            <button class="readsize-btn" :disabled="settings.fontSize <= 14" @click="setFontSize(settings.fontSize - 1)">A−</button>
+            <button class="readsize-btn" :disabled="settings.fontSize >= 20" @click="setFontSize(settings.fontSize + 1)">A+</button>
+          </div>
+          <button class="copy-link" @click="copyLink">{{ linkCopied ? '已复制 ✓' : '复制链接' }}</button>
+          <router-link
+            class="edit-link"
+            :to="{ name: 'posts-editor', query: { file: `${post.slug}.md` } }"
+          >编辑</router-link>
+        </div>
       </div>
       <header class="article-head">
         <h1 class="article-title">{{ post.title }}</h1>
@@ -119,7 +140,7 @@ onBeforeUnmount(() => {
         >{{ item.text }}</button>
       </aside>
 
-      <div class="prose" v-html="html"></div>
+      <div class="prose" :style="proseStyle" v-html="html"></div>
 
       <nav v-if="prev || next" class="post-pager">
         <router-link v-if="prev" class="pager-item" :to="{ name: 'post', params: { slug: prev.slug } }">

@@ -3,6 +3,9 @@ import SnakeGame from '../components/SnakeGame.vue'
 import PomodoroTimer from '../components/PomodoroTimer.vue'
 import DiceTool from '../components/DiceTool.vue'
 import RandomPick from '../components/RandomPick.vue'
+import CountdownTimer from '../components/CountdownTimer.vue'
+import PasswordGenerator from '../components/PasswordGenerator.vue'
+import StickyNotes from '../components/StickyNotes.vue'
 </script>
 
 <template>
@@ -16,10 +19,19 @@ import RandomPick from '../components/RandomPick.vue'
         <PomodoroTimer />
       </div>
       <div class="tools-cell">
+        <CountdownTimer />
+      </div>
+      <div class="tools-cell">
+        <PasswordGenerator />
+      </div>
+      <div class="tools-cell">
         <DiceTool />
       </div>
       <div class="tools-cell">
         <RandomPick />
+      </div>
+      <div class="tools-cell">
+        <StickyNotes />
       </div>
       <div class="tools-cell">
         <SnakeGame />

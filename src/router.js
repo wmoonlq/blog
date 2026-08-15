@@ -34,6 +34,21 @@ const router = createRouter({
       path: '/workbench/effects',
       name: 'effects',
       component: () => import('./views/WorkbenchEffectsView.vue')
+    },
+    {
+      path: '/tags',
+      name: 'tags',
+      component: () => import('./views/TagsView.vue')
+    },
+    {
+      path: '/timeline',
+      name: 'timeline',
+      component: () => import('./views/TimelineView.vue')
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: () => import('./views/AboutView.vue')
     }
   ]
 })

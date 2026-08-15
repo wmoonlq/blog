@@ -30,6 +30,10 @@ function onClick(e) {
 }
 
 function draw() {
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#B68D73'
+  const rgb = accent.startsWith('#') && accent.length === 7
+    ? `${parseInt(accent.slice(1, 3), 16)}, ${parseInt(accent.slice(3, 5), 16)}, ${parseInt(accent.slice(5, 7), 16)}`
+    : '182, 141, 115'
   ctx.clearRect(0, 0, W, H)
   for (let i = ripples.length - 1; i >= 0; i--) {
     const r = ripples[i]
@@ -41,7 +45,7 @@ function draw() {
     }
     ctx.beginPath()
     ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2)
-    ctx.strokeStyle = `rgba(182, 141, 115, ${r.life})`
+    ctx.strokeStyle = `rgba(${rgb}, ${r.life})`
     ctx.lineWidth = 1.5
     ctx.stroke()
   }

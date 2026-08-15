@@ -2,16 +2,20 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMediaQuery } from '../utils/media'
+import { settings, toggleTheme } from '../stores/settings'
 
 const open = ref(false)
 const route = useRoute()
-const isWide = useMediaQuery('(min-width: 760px)')
+const isWide = useMediaQuery('(min-width: 820px)')
 
 const items = [
   { name: 'home', label: '文章' },
   { name: 'notes', label: '随笔' },
+  { name: 'tags', label: '标签' },
+  { name: 'timeline', label: '时间线' },
   { name: 'workbench', label: '工作台' },
-  { name: 'effects', label: '特效' }
+  { name: 'effects', label: '特效' },
+  { name: 'about', label: '关于' }
 ]
 
 function toggle() {
@@ -53,6 +57,9 @@ function openSearch() {
           :to="{ name: item.name }"
         >{{ item.label }}</router-link>
         <button class="nav-search" aria-label="搜索" @click="openSearch">⌕</button>
+        <button class="theme-toggle nav-theme" :aria-pressed="settings.theme === 'dark'" @click="toggleTheme">
+          {{ settings.theme === 'light' ? '☾' : '☀' }}
+        </button>
       </nav>
       <button v-else class="nav-toggle" :aria-expanded="open" @click.stop="toggle">
         <span v-if="!open">☰</span>
@@ -70,6 +77,9 @@ function openSearch() {
           @click="close"
         >{{ item.label }}</router-link>
         <button class="nav-drop-link nav-drop-search" @click="close; openSearch()">⌕ 搜索</button>
+        <button class="nav-drop-link nav-drop-theme" @click="toggleTheme">
+          {{ settings.theme === 'light' ? '☾ 暗色模式' : '☀ 亮色模式' }}
+        </button>
       </nav>
     </transition>
   </header>

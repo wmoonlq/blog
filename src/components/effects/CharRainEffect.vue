@@ -27,13 +27,22 @@ function resize() {
   }))
 }
 
+function cssColor(varName, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
+  return v || fallback
+}
+
 function draw() {
+  const accent = cssColor('--accent', '#B68D73')
+  const text = cssColor('--text', '#1A1816')
   ctx.clearRect(0, 0, W, H)
   ctx.font = `${FONT}px "SFMono-Regular", Consolas, monospace`
   cols.forEach((col, i) => {
     const ch = CHARS[Math.floor(Math.random() * CHARS.length)]
-    ctx.fillStyle = Math.random() < 0.12 ? '#B68D73' : 'rgba(26, 24, 22, 0.85)'
+    ctx.fillStyle = Math.random() < 0.12 ? accent : text
+    ctx.globalAlpha = 0.85
     ctx.fillText(ch, i * FONT, col.y)
+    ctx.globalAlpha = 1
     col.y += col.v
     if (col.y > H + FONT) {
       col.y = -FONT

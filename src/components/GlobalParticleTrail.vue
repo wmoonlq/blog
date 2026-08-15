@@ -10,6 +10,11 @@ let H = 0
 const parts = []
 const mouse = { x: 0, y: 0, active: false }
 
+function colors() {
+  const s = getComputedStyle(document.documentElement)
+  return { accent: s.getPropertyValue('--accent').trim() || '#B68D73', text: s.getPropertyValue('--text').trim() || '#1A1816' }
+}
+
 function resize() {
   const canvas = canvasRef.value
   const dpr = window.devicePixelRatio || 1
@@ -37,6 +42,7 @@ function spawn() {
 }
 
 function tick() {
+  const c = colors()
   ctx.clearRect(0, 0, W, H)
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i]
@@ -49,7 +55,7 @@ function tick() {
       continue
     }
     ctx.globalAlpha = Math.max(0, p.life) * 0.55
-    ctx.fillStyle = p.accent ? '#B68D73' : '#1A1816'
+    ctx.fillStyle = p.accent ? c.accent : c.text
     ctx.beginPath()
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
     ctx.fill()

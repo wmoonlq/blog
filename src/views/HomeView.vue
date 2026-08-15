@@ -1,14 +1,27 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { getAllPosts } from '../utils/posts'
 import { getAllNotes } from '../utils/notes'
 import { readingTime, relativeTime } from '../utils/format'
 
+const route = useRoute()
 const posts = computed(() => getAllPosts())
 const notes = computed(() => getAllNotes())
 
 const query = ref('')
 const activeTag = ref('')
+
+onMounted(() => {
+  if (route.query.tag) activeTag.value = route.query.tag
+})
+
+watch(
+  () => route.query.tag,
+  (tag) => {
+    if (tag) activeTag.value = tag
+  }
+)
 
 const allTags = computed(() => {
   const set = new Set()

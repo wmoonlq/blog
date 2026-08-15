@@ -39,6 +39,8 @@ const wordCount = computed(() => {
   return text.length
 })
 
+const editMode = ref('split') // 'edit' | 'preview' | 'split'
+
 const hasDraft = ref(false)
 
 let saveTimer = null
@@ -303,8 +305,13 @@ watch(connStatus, (s) => {
       <label class="field-label">标签（逗号分隔）</label>
       <input v-model="form.tags" class="input" placeholder="如 Vue, 前端" />
     </div>
-    <div class="editor-split">
-      <div>
+    <div class="editor-tabs">
+      <button class="editor-tab" :class="{ on: editMode === 'edit' }" @click="editMode = 'edit'">编辑</button>
+      <button class="editor-tab" :class="{ on: editMode === 'split' }" @click="editMode = 'split'">分屏</button>
+      <button class="editor-tab" :class="{ on: editMode === 'preview' }" @click="editMode = 'preview'">预览</button>
+    </div>
+    <div class="editor-split" :class="{ single: editMode !== 'split' }">
+      <div v-show="editMode !== 'preview'">
         <label class="field-label">正文（Markdown）</label>
         <textarea
           v-model="form.content"
@@ -313,7 +320,7 @@ watch(connStatus, (s) => {
           placeholder="写点什么…"
         ></textarea>
       </div>
-      <div>
+      <div v-show="editMode !== 'edit'">
         <label class="field-label">预览</label>
         <div class="prose editor-preview" v-html="preview"></div>
       </div>

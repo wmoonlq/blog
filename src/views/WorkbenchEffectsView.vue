@@ -7,6 +7,10 @@ import DigitalClock from '../components/effects/DigitalClock.vue'
 import RippleEffect from '../components/effects/RippleEffect.vue'
 import BreathingCircle from '../components/effects/BreathingCircle.vue'
 import EchoTrail from '../components/effects/EchoTrail.vue'
+import FireworksEffect from '../components/effects/FireworksEffect.vue'
+import SnowfallEffect from '../components/effects/SnowfallEffect.vue'
+import TiltCardEffect from '../components/effects/TiltCardEffect.vue'
+import TextPulseEffect from '../components/effects/TextPulseEffect.vue'
 import { effects, toggleParticleTrail } from '../stores/effects'
 
 const effectsList = [
@@ -17,7 +21,11 @@ const effectsList = [
   { title: '数字时钟', sub: '衬线数字，精确到秒', component: DigitalClock },
   { title: '点击涟漪', sub: '点击水面，波纹荡开', component: RippleEffect, canvas: true },
   { title: '呼吸圆', sub: '跟随节奏一吸一呼', component: BreathingCircle },
-  { title: '光标残影', sub: '移动鼠标，字符尾随', component: EchoTrail }
+  { title: '光标残影', sub: '移动鼠标，字符尾随', component: EchoTrail },
+  { title: '烟花', sub: '点击夜空，绽放一瞬', component: FireworksEffect, canvas: true },
+  { title: '落雪', sub: '雪花无声，缓缓飘落', component: SnowfallEffect, canvas: true },
+  { title: '立体卡片', sub: '跟随光标，旋转立起', component: TiltCardEffect },
+  { title: '逐字律动', sub: '每个字都有自己的节拍', component: TextPulseEffect }
 ]
 </script>
 
