@@ -44,9 +44,13 @@ const KIND_LABEL = { css: 'CSS', canvas: 'CANVAS', '3d': '3D' }
 
 // ---- 环形轨道 ----
 const orbitRef = ref(null)
+const selectedIndex = ref(-1)
 const cards = effectsList.map((fx, i) => ({
   ...fx,
-  baseAngle: (i / effectsList.length) * Math.PI * 2
+  baseAngle: (i / effectsList.length) * Math.PI * 2,
+  // 动画状态（插值缓动）
+  dx: 0,
+  dy: 0
 }))
 
 let raf = null
@@ -64,23 +68,51 @@ function layout() {
   cards.forEach((c, i) => {
     const card = c.el
     if (card) {
-      card.style.width = `${cardSize}px`
-      card.style.height = `${cardSize * 1.18}px`
+      const sel = i === selectedIndex.value
+      card.style.width = sel ? `${cardSize * 1.9}px` : `${cardSize}px`
+      card.style.height = sel ? `${cardSize * 1.18 * 1.25}px` : `${cardSize * 1.18}px`
     }
   })
 }
 
 function frame() {
   slowAngle += 0.0012
-  cards.forEach((c) => {
+  cards.forEach((c, i) => {
     const card = c.el
     if (!card) return
-    const angle = c.baseAngle + slowAngle
-    const x = Math.cos(angle) * radius
-    const y = Math.sin(angle) * radius
-    card.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
+
+    let targetX = 0
+    let targetY = 0
+    let k = 0.08
+
+    if (i === selectedIndex.value) {
+      // 选中：飘向中心
+      targetX = 0
+      targetY = 0
+      k = 0.06
+    } else {
+      // 轨道上：继续随星环旋转
+      const angle = c.baseAngle + slowAngle
+      targetX = Math.cos(angle) * radius
+      targetY = Math.sin(angle) * radius
+    }
+
+    c.dx += (targetX - c.dx) * k
+    c.dy += (targetY - c.dy) * k
+
+    card.style.transform = `translate(calc(-50% + ${c.dx}px), calc(-50% + ${c.dy}px))`
   })
   raf = requestAnimationFrame(frame)
+}
+
+function onSelect(i) {
+  selectedIndex.value = selectedIndex.value === i ? -1 : i
+  layout()
+}
+
+function clearSelect() {
+  selectedIndex.value = -1
+  layout()
 }
 
 function setCardEl(i, el) {
@@ -107,7 +139,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div ref="orbitRef" class="fx-orbit">
-      <div class="fx-orbit-core">
+      <div class="fx-orbit-core" @click="clearSelect">
         <p class="fx-orbit-core-count">{{ String(effectsList.length).padStart(2, '0') }}</p>
         <p class="fx-orbit-core-label">个作品<br />CSS · Canvas · WebGL</p>
       </div>
@@ -117,6 +149,8 @@ onBeforeUnmount(() => {
         :key="fx.title"
         :ref="(el) => setCardEl(i, el)"
         class="fx-orbit-card"
+        :class="{ selected: i === selectedIndex }"
+        @click="onSelect(i)"
       >
         <div
           class="fx-orbit-card-inner"
@@ -127,11 +161,13 @@ onBeforeUnmount(() => {
             <span class="fx-num">{{ String(i + 1).padStart(2, '0') }}</span>
           </div>
           <h2 class="fx-orbit-card-title">{{ fx.title }}</h2>
+          <p v-if="i === selectedIndex" class="fx-orbit-card-sub">{{ fx.sub }}</p>
           <div class="fx-orbit-demo">
             <component :is="fx.component" />
           </div>
         </div>
       </section>
+      <div v-if="selectedIndex >= 0" class="fx-orbit-close" @click="clearSelect">✕ 收起</div>
     </div>
 
     <p class="fx-orbit-hint">移入卡片查看效果 · 点击右上角 ⚙ 设置全局特效</p>

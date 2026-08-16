@@ -696,6 +696,7 @@ img {
   left: 50%;
   top: 50%;
   will-change: transform;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .fx-orbit-card-inner {
@@ -4305,4 +4306,54 @@ img {
 .miniplayer-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(12px);
+}
+
+
+/* 选中态：脱离轨道居中放大 */
+.fx-orbit-card {
+  cursor: pointer;
+  z-index: 1;
+}
+
+.fx-orbit-card.selected {
+  z-index: 10;
+}
+
+.fx-orbit-card.selected .fx-orbit-card-inner {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+  animation-play-state: paused;
+  background: var(--bg);
+}
+
+.fx-orbit-card.selected .fx-orbit-demo {
+  height: 200px;
+}
+
+.fx-orbit-card-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.fx-orbit-close {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, calc(-50% + 200px));
+  z-index: 11;
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  background: var(--bg);
+  padding: 6px 18px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.fx-orbit-close:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
