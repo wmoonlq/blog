@@ -709,6 +709,18 @@ img {
   font-size: 12px;
   color: var(--text-secondary);
   text-align: center;
+  animation: fx-stage-sub-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s backwards;
+}
+
+@keyframes fx-stage-sub-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fx-kind {
@@ -750,6 +762,11 @@ img {
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
+.fx-orbit-card-inner {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), color var(--transition);
+}
+
 .fx-orbit-card-title {
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -757,7 +774,6 @@ img {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color var(--transition);
 }
 
 .fx-orbit-card:hover {
@@ -765,13 +781,35 @@ img {
   box-shadow: var(--shadow-card);
 }
 
+.fx-orbit-card:hover .fx-orbit-card-inner {
+  transform: scale(1.22);
+}
+
+.fx-orbit-card:hover .fx-orbit-card-title {
+  color: var(--accent);
+}
+
 .fx-orbit-card.selected {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
 
+.fx-orbit-card.selected .fx-orbit-card-inner {
+  animation: fx-card-pulse 1.6s ease-in-out infinite;
+}
+
 .fx-orbit-card.selected .fx-orbit-card-title {
   color: var(--accent);
+}
+
+@keyframes fx-card-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
 }
 
 .fx-orbit-hint {

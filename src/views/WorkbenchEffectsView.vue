@@ -157,7 +157,9 @@ onBeforeUnmount(() => {
         :class="{ selected: i === selectedIndex }"
         @click="onSelect(i)"
       >
-        <span class="fx-orbit-card-title">{{ fx.title }}</span>
+        <span class="fx-orbit-card-inner">
+          <span class="fx-orbit-card-title">{{ fx.title }}</span>
+        </span>
       </section>
     </div>
 
