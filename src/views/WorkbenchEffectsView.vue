@@ -57,14 +57,37 @@ let raf = null
 let slowAngle = 0
 let radius = 0
 let cardSize = 180
+const CARD_GAP = 14 // 相邻卡片最小间距
 
 function layout() {
   const el = orbitRef.value
   if (!el) return
   const w = el.clientWidth
   const h = el.clientHeight
-  radius = Math.min(w, h) * 0.36
-  cardSize = Math.min(190, Math.max(140, (Math.PI * 2 * radius) / effectsList.length * 0.72))
+  const count = cards.length
+
+  // 几何约束：周长必须容纳 count 张卡片 + 间距
+  // 所需半径 = count × (卡宽 + 间距) / 2π
+  const MAX_CARD = 190
+  const MIN_CARD = w < 560 ? 74 : w < 860 ? 86 : 100
+
+  // 先按容器允许的最大半径（容器短边的一半）试算
+  let r = Math.min(w, h) * 0.36
+  let size = (2 * Math.PI * r) / count - CARD_GAP
+
+  if (size < MIN_CARD) {
+    // 卡片太小：尝试加大半径到容器极限
+    const needR = (count * (MIN_CARD + CARD_GAP)) / (2 * Math.PI)
+    const maxR = Math.min(w, h) / 2 - MIN_CARD / 2
+    r = Math.min(needR, maxR)
+    size = (2 * Math.PI * r) / count - CARD_GAP
+    if (size < MIN_CARD) size = MIN_CARD // 极端窄容器兜底
+  }
+
+  if (size > MAX_CARD) size = MAX_CARD
+  radius = r
+  cardSize = size
+
   cards.forEach((c, i) => {
     const card = c.el
     if (card) {
