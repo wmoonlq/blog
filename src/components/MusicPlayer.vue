@@ -1,32 +1,32 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { parseLRC, findLyricIndex, parseYRC, findCharIndex } from '../utils/lrc'
+import {
+  music, currentTrack, progress, modeLabel,
+  setTracks, cycleMode, togglePlay, playIndex, next, prev,
+  seekTo, seekToLyric, setVolume, getAudio, setLyricAdjust
+} from '../stores/music'
 
 const props = defineProps({
   tracks: { type: Array, required: true }
 })
 
-const audioRef = ref(null)
+// 同步曲库到全局
+setTracks(props.tracks)
+
 const lyricBoxRef = ref(null)
 const lyricItemRefs = ref([])
 const yrcBoxRef = ref(null)
 const yrcItemRefs = ref([])
 const canvasRef = ref(null)
 
-const playing = ref(false)
-const index = ref(0)
-const current = ref(0)
-const duration = ref(0)
-const volume = ref(0.8)
-const mode = ref('order') // order | list | loop | random
-const showList = ref(false)
 const lyrics = ref([])
 const yrcLines = ref([])
 const karaoke = ref(false)
-const lrcOffset = ref(0) // LRC 文件内 [offset:] 标签
-const adjust = ref(0) // 用户手动校准偏移（秒）
+const lrcOffset = ref(0)
 const lyricIndex = ref(-1)
-const showAdjust = ref(false)
+const kLine = ref(-1)
+const kChar = ref(-1)
 const ctx = ref(null)
 const analyser = ref(null)
 let raf = null
@@ -42,12 +42,16 @@ function savedAdjust(slug) {
 }
 
 function trackAdjustKey() {
-  return `${OFFSET_KEY}:${track.value ? track.value.slug : ''}`
+  return `${OFFSET_KEY}:${currentTrack.value ? currentTrack.value.slug : ''}`
 }
 
-const track = computed(() => props.tracks[index.value] || null)
-const progress = computed(() => (duration.value ? (current.value / duration.value) * 100 : 0))
-const modeLabel = computed(() => ({ order: '顺序', list: '列表循环', loop: '单曲循环', random: '随机' }[mode.value]))
+const track = currentTrack
+const playing = computed(() => music.playing)
+const current = computed(() => music.current)
+const duration = computed(() => music.duration)
+const volume = computed(() => music.volume)
+const mode = computed(() => music.mode)
+const index = computed(() => music.index)
 
 function fmt(s) {
   if (!isFinite(s) || s < 0) s = 0
@@ -56,96 +60,11 @@ function fmt(s) {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-function togglePlay() {
-  const a = audioRef.value
-  if (!a) return
-  if (a.paused) a.play()
-  else a.pause()
-}
-
-const MODE_CYCLE = ['order', 'list', 'loop', 'random']
-
-function cycleMode() {
-  const i = MODE_CYCLE.indexOf(mode.value)
-  mode.value = MODE_CYCLE[(i + 1) % MODE_CYCLE.length]
-}
-
-function playIndex(i) {
-  index.value = (i + props.tracks.length) % props.tracks.length
-  nextTick(() => {
-    audioRef.value && audioRef.value.play()
-  })
-}
-
-function next(manual = false) {
-  if (mode.value === 'random') {
-    let i
-    do {
-      i = Math.floor(Math.random() * props.tracks.length)
-    } while (i === index.value && props.tracks.length > 1)
-    playIndex(i)
-    return
-  }
-  playIndex(index.value + 1)
-  void manual
-}
-
-function prev() {
-  if (current.value > 3) {
-    audioRef.value.currentTime = 0
-    return
-  }
-  playIndex(index.value - 1)
-}
-
-function seek(e) {
-  const rect = e.currentTarget.getBoundingClientRect()
-  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-  audioRef.value.currentTime = ratio * duration.value
-}
-
-function setVol(e) {
-  const rect = e.currentTarget.getBoundingClientRect()
-  volume.value = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-  audioRef.value.volume = volume.value
-}
-
-function onEnded() {
-  if (mode.value === 'loop') {
-    audioRef.value.currentTime = 0
-    audioRef.value.play()
-    return
-  }
-  if (mode.value === 'list') {
-    playIndex(index.value + 1) // 循环回第一首
-    return
-  }
-  if (mode.value === 'random') {
-    next()
-    return
-  }
-  // order：播完最后一首停止
-  if (index.value >= props.tracks.length - 1) {
-    playing.value = false
-  } else {
-    next()
-  }
-}
-
-function onKeydown(e) {
-  const target = e.target
-  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
-  if (e.code === 'Space') {
-    e.preventDefault()
-    togglePlay()
-  }
-}
-
 // ---- 歌词加载 ----
 async function loadLyrics() {
   const t = track.value
   lyricIndex.value = -1
-  adjust.value = savedAdjust(t ? t.slug : '')
+  setLyricAdjust(savedAdjust(t ? t.slug : ''))
   if (!t || !t.lyrics) {
     lyrics.value = []
     lrcOffset.value = 0
@@ -163,7 +82,6 @@ async function loadLyrics() {
     lyrics.value = []
     lrcOffset.value = 0
   }
-  // 逐字 yrc（可选）
   if (t.yrc) {
     try {
       const res = await fetch(t.yrc)
@@ -180,33 +98,38 @@ async function loadLyrics() {
 
 // ---- 歌词校准 ----
 function nudgeLyrics(delta) {
-  adjust.value = Math.min(20, Math.max(-20, Math.round((adjust.value + delta) * 10) / 10))
-  localStorage.setItem(trackAdjustKey(), String(adjust.value))
+  const v = Math.min(20, Math.max(-20, Math.round((music.lyricAdjust + delta) * 10) / 10))
+  setLyricAdjust(v)
+  localStorage.setItem(trackAdjustKey(), String(v))
 }
 
 function resetAdjust() {
-  adjust.value = 0
+  setLyricAdjust(0)
   localStorage.removeItem(trackAdjustKey())
 }
 
 function effectiveTime() {
-  return current.value + adjust.value + lrcOffset.value
+  return music.current + music.lyricAdjust + lrcOffset.value
 }
 
-// ---- 点击歌词跳转进度 ----
-function seekToLyric(time) {
-  const a = audioRef.value
-  if (!a || !track.value) return
-  // 反向应用校准偏移：点击的歌词时间 - 用户偏移 = 实际播放时间
-  const target = Math.max(0, Math.min(duration.value || 0, time - adjust.value - lrcOffset.value))
-  a.currentTime = target
-  if (a.paused) a.play()
+function onSeekLyric(time) {
+  seekToLyric(time)
+  const a = getAudio()
+  if (a && a.paused) togglePlay()
+}
+
+function seek(e) {
+  const rect = e.currentTarget.getBoundingClientRect()
+  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+  seekTo(ratio * music.duration)
+}
+
+function setVol(e) {
+  const rect = e.currentTarget.getBoundingClientRect()
+  setVolume(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)))
 }
 
 // ---- 逐字卡拉OK ----
-const kLine = ref(-1)
-const kChar = ref(-1)
-
 function charState(lineIdx, charIdx) {
   if (lineIdx < kLine.value) return 'done'
   if (lineIdx > kLine.value) return 'todo'
@@ -242,10 +165,11 @@ let audioCtx = null
 let sourceNode = null
 
 function setupAnalyser() {
-  if (!audioRef.value) return
+  const a = getAudio()
+  if (!a) return
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-    sourceNode = audioCtx.createMediaElementSource(audioRef.value)
+    sourceNode = audioCtx.createMediaElementSource(a)
     analyser.value = audioCtx.createAnalyser()
     analyser.value.fftSize = 128
     sourceNode.connect(analyser.value)
@@ -291,9 +215,9 @@ function drawSpectrum() {
   frame()
 }
 
-// ---- 歌词滚动 ----
+// ---- 歌词高亮 ----
 watch(
-  () => current.value,
+  () => music.current,
   () => {
     const idx = findLyricIndex(lyrics.value, effectiveTime())
     if (idx !== lyricIndex.value) {
@@ -310,7 +234,7 @@ watch(
 )
 
 watch(
-  () => index.value,
+  () => music.index,
   () => {
     loadLyrics()
   },
@@ -320,24 +244,27 @@ watch(
 watch(
   () => props.tracks,
   () => {
-    if (index.value >= props.tracks.length) index.value = 0
+    setTracks(props.tracks)
     loadLyrics()
   }
 )
 
-function onPlayStart() {
-  playing.value = true
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume()
-  if (!analyser.value) setupAnalyser()
-}
+watch(
+  () => music.playing,
+  (v) => {
+    if (v) {
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume()
+      if (!analyser.value) setupAnalyser()
+    }
+  }
+)
 
 onMounted(() => {
-  document.addEventListener('keydown', onKeydown)
   window.addEventListener('resize', () => raf && drawSpectrum())
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('resize', () => raf && drawSpectrum())
   cancelAnimationFrame(raf)
   if (audioCtx) audioCtx.close()
 })
@@ -345,16 +272,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="music-player" :class="{ hasLyrics: lyrics.length }">
-    <audio
-      ref="audioRef"
-      :src="track ? track.source : ''"
-      @play="onPlayStart"
-      @pause="playing = false"
-      @timeupdate="current = audioRef.currentTime"
-      @loadedmetadata="duration = audioRef.duration"
-      @ended="onEnded"
-    ></audio>
-
     <div class="mp-body">
       <div class="mp-left">
         <div class="mp-cover-lg" :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}">
@@ -376,7 +293,7 @@ onBeforeUnmount(() => {
             class="mp-lyric-line"
             :class="{ on: i === lyricIndex }"
             :title="`点击跳转 ${fmt(line.time)}`"
-            @click="seekToLyric(line.time)"
+            @click="onSeekLyric(line.time)"
           >{{ line.text }}</p>
         </div>
         <div v-else-if="karaoke && yrcLines.length" ref="yrcBoxRef" class="mp-lyrics karaoke">
@@ -387,7 +304,7 @@ onBeforeUnmount(() => {
             class="mp-k-line"
             :class="{ on: i === kLine }"
             :title="`点击跳转 ${fmt(line.time)}`"
-            @click="seekToLyric(line.time)"
+            @click="onSeekLyric(line.time)"
           >
             <span
               v-for="(c, j) in line.chars"
@@ -405,10 +322,10 @@ onBeforeUnmount(() => {
           </button>
           <button class="mp-btn" title="校准：提前" @click="nudgeLyrics(-0.5)">−0.5s</button>
           <button class="mp-btn" title="校准：提前" @click="nudgeLyrics(-0.1)">−0.1s</button>
-          <span class="mp-adjust-value" :class="{ on: adjust !== 0 }">{{ adjust > 0 ? `+${adjust.toFixed(1)}s` : adjust === 0 ? '同步' : `${adjust.toFixed(1)}s` }}</span>
+          <span class="mp-adjust-value" :class="{ on: music.lyricAdjust !== 0 }">{{ music.lyricAdjust > 0 ? `+${music.lyricAdjust.toFixed(1)}s` : music.lyricAdjust === 0 ? '同步' : `${music.lyricAdjust.toFixed(1)}s` }}</span>
           <button class="mp-btn" title="校准：延后" @click="nudgeLyrics(0.1)">+0.1s</button>
           <button class="mp-btn" title="校准：延后" @click="nudgeLyrics(0.5)">+0.5s</button>
-          <button v-if="adjust !== 0" class="mp-btn mp-adjust-reset" title="重置校准" @click="resetAdjust">重置</button>
+          <button v-if="music.lyricAdjust !== 0" class="mp-btn mp-adjust-reset" title="重置校准" @click="resetAdjust">重置</button>
         </div>
       </div>
 
@@ -430,7 +347,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="mp-progress" @click="seek">
+    <div class="mp-progress" @click="seek($event)">
       <div class="mp-progress-fill" :style="{ width: `${progress}%` }"></div>
     </div>
     <div class="mp-row">
@@ -441,7 +358,7 @@ onBeforeUnmount(() => {
         <button class="mp-btn" title="下一首" @click="next(true)">⏭</button>
       </div>
       <div class="mp-right">
-        <div class="mp-vol" @click="setVol">
+        <div class="mp-vol" @click="setVol($event)">
           <div class="mp-vol-fill" :style="{ width: `${volume * 100}%` }"></div>
         </div>
         <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="cycleMode">

@@ -614,15 +614,19 @@ img {
    特效模块
    ============================================================ */
 .effects-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  columns: 2;
+  column-gap: 24px;
   padding-bottom: 48px;
+}
+
+.effects-grid .effect-card {
+  break-inside: avoid;
+  margin-bottom: 24px;
 }
 
 @media (max-width: 720px) {
   .effects-grid {
-    grid-template-columns: 1fr;
+    columns: 1;
   }
 }
 
@@ -654,6 +658,19 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 瀑布流错落：按位置交替改变效果区高度 */
+.effects-grid .effect-card:nth-child(3n) .effect-demo {
+  height: 260px;
+}
+
+.effects-grid .effect-card:nth-child(4n) .effect-demo {
+  height: 190px;
+}
+
+.effects-grid .effect-card:nth-child(5n) .effect-demo {
+  height: 240px;
 }
 
 .effect-demo.canvas-demo {
@@ -4053,4 +4070,116 @@ img {
   text-align: center;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+
+/* ============================================================
+   迷你播放条（全局）
+   ============================================================ */
+.miniplayer {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  background: var(--bg-soft);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  z-index: 70;
+  cursor: pointer;
+}
+
+.mini-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+
+.mini-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.mini-cover {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--hover-bg);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mini-glyph {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.mini-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mini-title {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-artist {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mini-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.mini-btn:hover {
+  color: var(--accent);
+}
+
+.mini-play {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.miniplayer-enter-active,
+.miniplayer-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.miniplayer-enter-from,
+.miniplayer-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(12px);
 }
