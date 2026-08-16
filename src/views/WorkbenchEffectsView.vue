@@ -44,11 +44,10 @@ const KIND_LABEL = { css: 'CSS', canvas: 'CANVAS', '3d': '3D' }
 
 // ---- 环形轨道 ----
 const orbitRef = ref(null)
-const selectedIndex = ref(-1)
+const selectedIndex = ref(0) // 默认展示第一个特效
 const cards = effectsList.map((fx, i) => ({
   ...fx,
   baseAngle: (i / effectsList.length) * Math.PI * 2,
-  // 动画状态（插值缓动）
   dx: 0,
   dy: 0
 }))
@@ -56,8 +55,8 @@ const cards = effectsList.map((fx, i) => ({
 let raf = null
 let slowAngle = 0
 let radius = 0
-let cardSize = 180
-const CARD_GAP = 14 // 相邻卡片最小间距
+let cardSize = 150
+const CARD_GAP = 10 // 相邻卡片最小间距
 
 function layout() {
   const el = orbitRef.value
@@ -66,22 +65,18 @@ function layout() {
   const h = el.clientHeight
   const count = cards.length
 
-  // 几何约束：周长必须容纳 count 张卡片 + 间距
-  // 所需半径 = count × (卡宽 + 间距) / 2π
-  const MAX_CARD = 190
-  const MIN_CARD = w < 560 ? 74 : w < 860 ? 86 : 100
+  const MAX_CARD = 150
+  const MIN_CARD = w < 560 ? 64 : w < 860 ? 76 : 90
 
-  // 先按容器允许的最大半径（容器短边的一半）试算
-  let r = Math.min(w, h) * 0.36
+  let r = Math.min(w, h) * 0.34
   let size = (2 * Math.PI * r) / count - CARD_GAP
 
   if (size < MIN_CARD) {
-    // 卡片太小：尝试加大半径到容器极限
     const needR = (count * (MIN_CARD + CARD_GAP)) / (2 * Math.PI)
     const maxR = Math.min(w, h) / 2 - MIN_CARD / 2
     r = Math.min(needR, maxR)
     size = (2 * Math.PI * r) / count - CARD_GAP
-    if (size < MIN_CARD) size = MIN_CARD // 极端窄容器兜底
+    if (size < MIN_CARD) size = MIN_CARD
   }
 
   if (size > MAX_CARD) size = MAX_CARD
@@ -91,51 +86,29 @@ function layout() {
   cards.forEach((c, i) => {
     const card = c.el
     if (card) {
-      const sel = i === selectedIndex.value
-      card.style.width = sel ? `${cardSize * 1.9}px` : `${cardSize}px`
-      card.style.height = sel ? `${cardSize * 1.18 * 1.25}px` : `${cardSize * 1.18}px`
+      card.style.width = `${cardSize}px`
+      card.style.height = `${cardSize * 0.72}px`
     }
   })
 }
 
 function frame() {
   slowAngle += 0.0012
-  cards.forEach((c, i) => {
+  cards.forEach((c) => {
     const card = c.el
     if (!card) return
-
-    let targetX = 0
-    let targetY = 0
-    let k = 0.08
-
-    if (i === selectedIndex.value) {
-      // 选中：飘向中心
-      targetX = 0
-      targetY = 0
-      k = 0.06
-    } else {
-      // 轨道上：继续随星环旋转
-      const angle = c.baseAngle + slowAngle
-      targetX = Math.cos(angle) * radius
-      targetY = Math.sin(angle) * radius
-    }
-
-    c.dx += (targetX - c.dx) * k
-    c.dy += (targetY - c.dy) * k
-
+    const angle = c.baseAngle + slowAngle
+    const targetX = Math.cos(angle) * radius
+    const targetY = Math.sin(angle) * radius
+    c.dx += (targetX - c.dx) * 0.08
+    c.dy += (targetY - c.dy) * 0.08
     card.style.transform = `translate(calc(-50% + ${c.dx}px), calc(-50% + ${c.dy}px))`
   })
   raf = requestAnimationFrame(frame)
 }
 
 function onSelect(i) {
-  selectedIndex.value = selectedIndex.value === i ? -1 : i
-  layout()
-}
-
-function clearSelect() {
-  selectedIndex.value = -1
-  layout()
+  selectedIndex.value = i
 }
 
 function setCardEl(i, el) {
@@ -158,15 +131,24 @@ onBeforeUnmount(() => {
   <div class="page">
     <header class="fx-orbit-hero">
       <h1 class="fx-orbit-title">特效 <span class="fx-orbit-accent">陈列室</span></h1>
-      <p class="fx-orbit-sub">环绕中心的特效星环 —— 卡片呼吸起伏，整体缓慢自转</p>
+      <p class="fx-orbit-sub">点击轨道上的名称，在中心舞台查看效果 —— 效果是主角</p>
     </header>
 
     <div ref="orbitRef" class="fx-orbit">
-      <div class="fx-orbit-core" @click="clearSelect">
-        <p class="fx-orbit-core-count">{{ String(effectsList.length).padStart(2, '0') }}</p>
-        <p class="fx-orbit-core-label">个作品<br />CSS · Canvas · WebGL</p>
+      <!-- 中心舞台：矩形展示区 -->
+      <div class="fx-stage" :key="selectedIndex">
+        <div class="fx-stage-head">
+          <span class="fx-kind">{{ KIND_LABEL[cards[selectedIndex].kind] }}</span>
+          <h2 class="fx-stage-title">{{ cards[selectedIndex].title }}</h2>
+          <span class="fx-num">{{ String(selectedIndex + 1).padStart(2, '0') }} / {{ String(cards.length).padStart(2, '0') }}</span>
+        </div>
+        <div class="fx-stage-body">
+          <component :is="cards[selectedIndex].component" />
+        </div>
+        <p class="fx-stage-sub">{{ cards[selectedIndex].sub }}</p>
       </div>
 
+      <!-- 轨道文字卡片 -->
       <section
         v-for="(fx, i) in cards"
         :key="fx.title"
@@ -175,24 +157,10 @@ onBeforeUnmount(() => {
         :class="{ selected: i === selectedIndex }"
         @click="onSelect(i)"
       >
-        <div
-          class="fx-orbit-card-inner"
-          :style="{ animationDelay: `${(i / cards.length) * 4}s` }"
-        >
-          <div class="fx-orbit-card-head">
-            <span class="fx-kind">{{ KIND_LABEL[fx.kind] }}</span>
-            <span class="fx-num">{{ String(i + 1).padStart(2, '0') }}</span>
-          </div>
-          <h2 class="fx-orbit-card-title">{{ fx.title }}</h2>
-          <p v-if="i === selectedIndex" class="fx-orbit-card-sub">{{ fx.sub }}</p>
-          <div class="fx-orbit-demo">
-            <component :is="fx.component" />
-          </div>
-        </div>
+        <span class="fx-orbit-card-title">{{ fx.title }}</span>
       </section>
-      <div v-if="selectedIndex >= 0" class="fx-orbit-close" @click="clearSelect">✕ 收起</div>
     </div>
 
-    <p class="fx-orbit-hint">移入卡片查看效果 · 点击右上角 ⚙ 设置全局特效</p>
+    <p class="fx-orbit-hint">全局特效设置请点右上角 ⚙</p>
   </div>
 </template>

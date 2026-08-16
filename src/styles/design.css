@@ -610,196 +610,6 @@ img {
   color: var(--text-secondary);
 }
 
-/* ============================================================
-   特效模块 — 呼吸星环
-   ============================================================ */
-
-.fx-orbit-hero {
-  padding: 64px 0 40px;
-  text-align: center;
-}
-
-.fx-orbit-title {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 44px;
-  letter-spacing: 0.04em;
-}
-
-.fx-orbit-accent {
-  color: var(--accent);
-}
-
-.fx-orbit-sub {
-  margin-top: 14px;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-/* ---- 环形轨道容器 ---- */
-.fx-orbit {
-  position: relative;
-  width: 100%;
-  height: 860px;
-}
-
-/* 中心核 */
-.fx-orbit-core {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 220px;
-  height: 220px;
-  border: 1px solid var(--divider);
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-  background: var(--bg);
-  z-index: 1;
-  pointer-events: none;
-}
-
-.fx-orbit-core::before {
-  content: '';
-  position: absolute;
-  inset: -14px;
-  border: 1px solid var(--divider);
-  border-radius: 50%;
-  opacity: 0.5;
-}
-
-.fx-orbit-core-count {
-  font-family: var(--font-mono);
-  font-size: 42px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--accent);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.fx-orbit-core-label {
-  font-size: 12px;
-  line-height: 1.8;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-}
-
-/* ---- 环绕卡片 ---- */
-.fx-orbit-card {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  will-change: transform;
-  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.fx-orbit-card-inner {
-  border: var(--border-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-  padding: 14px 16px;
-  background: var(--bg);
-  height: 100%;
-  /* 呼吸：整体统一 4s 频率，相位由 animation-delay 错开 */
-  animation: fx-breathe 4s ease-in-out infinite;
-  transition: box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s;
-}
-
-.fx-orbit-card-inner:hover {
-  box-shadow: var(--shadow);
-  border-color: var(--accent);
-}
-
-@keyframes fx-breathe {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.72;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 1;
-  }
-}
-
-.fx-orbit-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.fx-kind {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  border: 1px solid rgba(182, 141, 115, 0.35);
-  border-radius: 999px;
-  padding: 1px 8px;
-}
-
-.fx-num {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--text-secondary);
-  opacity: 0.7;
-  font-variant-numeric: tabular-nums;
-}
-
-.fx-orbit-card-title {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.04em;
-  margin-top: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fx-orbit-demo {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--divider);
-  height: 88px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.fx-orbit-demo.canvas-demo {
-  padding: 0;
-}
-
-.fx-orbit-hint {
-  margin-top: 8px;
-  padding-bottom: 48px;
-  text-align: center;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-}
-
-@media (max-width: 720px) {
-  .fx-orbit {
-    height: 620px;
-  }
-  .fx-orbit-title {
-    font-size: 32px;
-  }
-  .fx-orbit-core {
-    width: 160px;
-    height: 160px;
-  }
-}
 
 .fx-canvas {
   display: block;
@@ -4356,4 +4166,90 @@ img {
 .fx-orbit-close:hover {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+
+/* ============================================================
+   时间线 — GitHub 提交记录
+   ============================================================ */
+.timeline-day-group {
+  margin-bottom: 28px;
+}
+
+.timeline-day {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--divider);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-item {
+  position: relative;
+  padding: 10px 0;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -23px;
+  top: 20px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  transition: background var(--transition);
+}
+
+.timeline-item:hover::before {
+  background: var(--accent);
+}
+
+.timeline-commit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-kind {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.timeline-msg {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  transition: color var(--transition);
+}
+
+.timeline-commit:hover .timeline-msg {
+  color: var(--accent);
+}
+
+.timeline-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timeline-sha {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+.timeline-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }

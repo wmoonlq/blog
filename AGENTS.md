@@ -38,6 +38,13 @@
 - 每轮开发结束，将功能迭代、踩坑记录同步到 `devlog/README.md`（Markdown，按日期分节）
 - 本文件（AGENTS.md）为项目记忆：新增模块/约定时同步更新；本文件变动随代码一起提交
 
+## AI 代理团队与循环编码验收
+
+- 团队定义在 `.opencode/agent/`：`blog-dev`（实现）、`blog-reviewer`（只读审查）、`blog-qa`（构建验证+验收裁决）
+- 循环流程：`/devloop <需求>` — 开发 → 构建 → 审查 → 验收，不通过自动带修复指令重跑（最多 3 轮），通过后同步开发日记、语义化 commit、push
+- 验收铁律：`npm run build` 零错误、不碰 `vite.config.js`/`scripts/`/`src/generated/`、符合设计系统 tokens、无副本文件、需求逐项覆盖
+- 单个子代理可单独使用：task 工具调 blog-dev / blog-reviewer / blog-qa
+
 ## 内容与媒体模块速查
 
 | 模块 | 元数据目录 | 文件目录 | 说明 |

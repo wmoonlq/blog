@@ -140,3 +140,38 @@
 - 媒体文件放 `public/`（构建时原样复制，路径 `/blog/xxx/文件名`）
 - GitHub 操作统一走 `src/utils/githubFiles.js`（上传/删除/读 sha，密码门禁 `123456` + Token 复用 `notes-token`）
 - 设计系统约束贯穿始终：无渐变、无彩色图标、衬线标题、单强调色
+
+---
+
+## 2026-08-16 搭建 AI 代理团队与循环编码验收
+
+### 背景
+
+需求：组建 agent 团队高效开发博客，并实现「AI 自动循环编码验收」——编码后自动构建、审查、验收，不通过自动带修复指令重跑。
+
+### 功能迭代清单
+
+| 模块 | 说明 |
+|---|---|
+| `blog-dev` | 实现 agent：最小改动实现需求，遵守设计系统与 AGENTS.md 铁律，交付前自行 `npm run build` |
+| `blog-reviewer` | 只读审查 agent：查禁区文件、设计 tokens、副本文件、代码质量、devlog 同步，输出 PASS/ISSUES |
+| `blog-qa` | 验收 agent：`npm run build` 零错误 + 验收标准逐项核验，输出裁决与修复指令（编辑权限全禁） |
+| `/devloop` 命令 | 主 agent 编排循环：开发 → 构建 → 审查 → 验收，最多 3 轮；通过后同步开发日记、语义化 commit、push |
+
+### 踩坑记录
+
+#### 1. 子代理工具权限分层
+
+- 三个子代理分别用 `permission` 控制：dev 可编辑、reviewer/qa 只读（`edit: deny`）+ 可跑 bash（验证构建）
+- 子代理输出必须结构化（裁决 + 问题清单 + 修复指令），否则主 agent 无法把验收结果喂回下一轮 dev
+
+#### 2. 验收标准前移到 AGENTS.md
+
+- 验收铁律（构建零错误、不碰构建文件、符合 tokens、无副本、需求覆盖）写进 AGENTS.md，作为 blog-qa 的固定核对项，避免每轮口头传递
+- 架构要点：验收标准 = 通用铁律（AGENTS.md）+ 本轮需求原文（用户输入），两者缺一不可
+
+### 架构要点
+
+- 团队定义在 `.opencode/agent/`（name 匹配文件名，frontmatter 写 mode/permission）
+- `/devloop <需求>` 的模板即工作流提示词：子代理信息由主 agent 中转，验收不通过时把修复指令原样附给下一轮 dev
+- 开发日记需记录功能迭代与踩坑记录（同轮提交）
