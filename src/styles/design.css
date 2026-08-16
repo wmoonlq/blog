@@ -744,7 +744,7 @@ img {
   flex-shrink: 0;
 }
 
-/* ---- 轨道文字卡片（极简，不抢主体） ---- */
+/* ---- 轨道文字卡片 ---- */
 .fx-orbit-card {
   position: absolute;
   left: 50%;
@@ -752,63 +752,108 @@ img {
   will-change: transform;
   cursor: pointer;
   border: 1px solid var(--divider);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--bg);
-  padding: 6px 12px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  gap: 7px;
+  text-align: left;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.fx-orbit-card-inner {
-  display: inline-block;
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), color var(--transition);
+.fx-orbit-card-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--divider);
+  transition: background var(--transition), transform var(--transition);
+}
+
+.fx-orbit-card-num {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--transition), opacity var(--transition);
 }
 
 .fx-orbit-card-title {
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.fx-orbit-card-sub {
+  max-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: max-width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s;
   white-space: nowrap;
 }
 
 .fx-orbit-card:hover {
   border-color: var(--accent);
   box-shadow: var(--shadow-card);
+  background: var(--bg);
 }
 
-.fx-orbit-card:hover .fx-orbit-card-inner {
-  transform: scale(1.22);
+.fx-orbit-card:hover .fx-orbit-card-dot {
+  background: var(--accent);
+  transform: scale(1.35);
+}
+
+.fx-orbit-card:hover .fx-orbit-card-num {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .fx-orbit-card:hover .fx-orbit-card-title {
-  color: var(--accent);
+  color: var(--text);
+}
+
+.fx-orbit-card:hover .fx-orbit-card-sub {
+  max-width: 90px;
+  opacity: 1;
 }
 
 .fx-orbit-card.selected {
   border-color: var(--accent);
   background: var(--accent-soft);
+  box-shadow: var(--shadow-card);
 }
 
-.fx-orbit-card.selected .fx-orbit-card-inner {
-  animation: fx-card-pulse 1.6s ease-in-out infinite;
+.fx-orbit-card.selected .fx-orbit-card-dot {
+  background: var(--accent);
+  transform: scale(1.35);
+  animation: fx-dot-pulse 1.6s ease-in-out infinite;
+}
+
+.fx-orbit-card.selected .fx-orbit-card-num {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .fx-orbit-card.selected .fx-orbit-card-title {
   color: var(--accent);
 }
 
-@keyframes fx-card-pulse {
+@keyframes fx-dot-pulse {
   0%,
   100% {
-    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(182, 141, 115, 0.4);
   }
   50% {
-    transform: scale(1.18);
+    box-shadow: 0 0 0 5px rgba(182, 141, 115, 0);
   }
 }
 

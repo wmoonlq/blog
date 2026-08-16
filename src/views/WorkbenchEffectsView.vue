@@ -83,11 +83,10 @@ function layout() {
   radius = r
   cardSize = size
 
-  cards.forEach((c, i) => {
+  cards.forEach((c) => {
     const card = c.el
     if (card) {
-      card.style.width = `${cardSize}px`
-      card.style.height = `${cardSize * 0.72}px`
+      // 内容自适应宽度，无需强设
     }
   })
 }
@@ -157,9 +156,10 @@ onBeforeUnmount(() => {
         :class="{ selected: i === selectedIndex }"
         @click="onSelect(i)"
       >
-        <span class="fx-orbit-card-inner">
-          <span class="fx-orbit-card-title">{{ fx.title }}</span>
-        </span>
+        <span class="fx-orbit-card-dot"></span>
+        <span class="fx-orbit-card-num">{{ String(i + 1).padStart(2, '0') }}</span>
+        <span class="fx-orbit-card-title">{{ fx.title }}</span>
+        <span class="fx-orbit-card-sub">{{ fx.sub }}</span>
       </section>
     </div>
 
