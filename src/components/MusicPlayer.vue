@@ -6,6 +6,7 @@ import {
   setTracks, cycleMode, togglePlay, playIndex, next, prev,
   seekTo, seekToLyric, setVolume, getAudio, setLyricAdjust
 } from '../stores/music'
+import { ensureAudioEngine, resumeAudioCtx, getAnalyser } from '../stores/audioEngine'
 
 const props = defineProps({
   tracks: { type: Array, required: true }
@@ -28,7 +29,6 @@ const lyricIndex = ref(-1)
 const kLine = ref(-1)
 const kChar = ref(-1)
 const ctx = ref(null)
-const analyser = ref(null)
 let raf = null
 
 const OFFSET_KEY = 'lyric-adjust'
@@ -161,26 +161,17 @@ function updateKaraoke() {
 }
 
 // ---- 频谱背景 ----
-let audioCtx = null
-let sourceNode = null
-
 function setupAnalyser() {
   const a = getAudio()
   if (!a) return
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-    sourceNode = audioCtx.createMediaElementSource(a)
-    analyser.value = audioCtx.createAnalyser()
-    analyser.value.fftSize = 128
-    sourceNode.connect(analyser.value)
-    analyser.value.connect(audioCtx.destination)
-  }
+  ensureAudioEngine()
   drawSpectrum()
 }
 
 function drawSpectrum() {
   const canvas = canvasRef.value
-  if (!canvas || !analyser.value) return
+  const analyser = getAnalyser()
+  if (!canvas || !analyser) return
   const dpr = window.devicePixelRatio || 1
   const w = canvas.clientWidth
   const h = canvas.clientHeight
@@ -190,7 +181,7 @@ function drawSpectrum() {
   ctx.value = c
   c.scale(dpr, dpr)
 
-  const data = new Uint8Array(analyser.value.frequencyBinCount)
+  const data = new Uint8Array(analyser.frequencyBinCount)
   const bars = 56
   const style = getComputedStyle(document.documentElement)
   const accent = style.getPropertyValue('--accent').trim() || '#B68D73'
@@ -198,7 +189,7 @@ function drawSpectrum() {
 
   function frame() {
     c.clearRect(0, 0, w, h)
-    analyser.value.getByteFrequencyData(data)
+    analyser.getByteFrequencyData(data)
     const bw = w / bars
     for (let i = 0; i < bars; i++) {
       const idx = Math.floor((i / bars) * data.length * 0.8)
@@ -253,20 +244,26 @@ watch(
   () => music.playing,
   (v) => {
     if (v) {
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume()
-      if (!analyser.value) setupAnalyser()
+      resumeAudioCtx()
+      if (!getAnalyser()) setupAnalyser()
+      else drawSpectrum()
     }
   }
 )
 
 onMounted(() => {
   window.addEventListener('resize', () => raf && drawSpectrum())
+  // 如果全局正在播放，恢复频谱
+  if (music.playing) {
+    resumeAudioCtx()
+    drawSpectrum()
+  }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', () => raf && drawSpectrum())
   cancelAnimationFrame(raf)
-  if (audioCtx) audioCtx.close()
+  // 注意：绝不 close 全局 audioCtx（会切断全局音频输出）
 })
 </script>
 
