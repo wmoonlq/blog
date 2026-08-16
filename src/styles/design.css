@@ -610,6 +610,191 @@ img {
   color: var(--text-secondary);
 }
 
+/* ============================================================
+   特效模块 — 星环舞台
+   ============================================================ */
+
+.fx-orbit-hero {
+  padding: 64px 0 40px;
+  text-align: center;
+}
+
+.fx-orbit-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 44px;
+  letter-spacing: 0.04em;
+}
+
+.fx-orbit-accent {
+  color: var(--accent);
+}
+
+.fx-orbit-sub {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ---- 环形轨道容器 ---- */
+.fx-orbit {
+  position: relative;
+  width: 100%;
+  height: 860px;
+}
+
+/* ---- 中心舞台（矩形展示区） ---- */
+.fx-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  height: 320px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  background: var(--bg);
+  padding: 16px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+  animation: fx-stage-in 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes fx-stage-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.fx-stage-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.fx-stage-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  flex: 1;
+}
+
+.fx-stage-body {
+  flex: 1;
+  margin-top: 12px;
+  border-top: 1px solid var(--divider);
+  padding-top: 10px;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fx-stage-body > * {
+  width: 100%;
+  height: 100%;
+}
+
+.fx-stage-sub {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.fx-kind {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  border: 1px solid rgba(182, 141, 115, 0.35);
+  border-radius: 999px;
+  padding: 1px 8px;
+  flex-shrink: 0;
+}
+
+.fx-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ---- 轨道文字卡片（极简，不抢主体） ---- */
+.fx-orbit-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  will-change: transform;
+  cursor: pointer;
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  background: var(--bg);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.fx-orbit-card-title {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+
+.fx-orbit-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card);
+}
+
+.fx-orbit-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.fx-orbit-card.selected .fx-orbit-card-title {
+  color: var(--accent);
+}
+
+.fx-orbit-hint {
+  margin-top: 8px;
+  padding-bottom: 48px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 720px) {
+  .fx-orbit {
+    height: 620px;
+  }
+  .fx-orbit-title {
+    font-size: 32px;
+  }
+  .fx-stage {
+    width: min(320px, 78vw);
+    height: 260px;
+  }
+}
 
 .fx-canvas {
   display: block;
