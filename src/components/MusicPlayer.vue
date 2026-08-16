@@ -63,6 +63,13 @@ function togglePlay() {
   else a.pause()
 }
 
+const MODE_CYCLE = ['order', 'list', 'loop', 'random']
+
+function cycleMode() {
+  const i = MODE_CYCLE.indexOf(mode.value)
+  mode.value = MODE_CYCLE[(i + 1) % MODE_CYCLE.length]
+}
+
 function playIndex(i) {
   index.value = (i + props.tracks.length) % props.tracks.length
   nextTick(() => {
@@ -437,8 +444,8 @@ onBeforeUnmount(() => {
         <div class="mp-vol" @click="setVol">
           <div class="mp-vol-fill" :style="{ width: `${volume * 100}%` }"></div>
         </div>
-        <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="mode = mode === 'list' ? 'loop' : mode === 'loop' ? 'random' : 'list'">
-          {{ mode === 'random' ? '⇄' : mode === 'loop' ? '⟳' : '≡' }}
+        <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="cycleMode">
+          {{ mode === 'random' ? '⇄' : mode === 'loop' ? '⟳' : mode === 'list' ? '⇅' : '→' }}
         </button>
       </div>
     </div>
