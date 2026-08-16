@@ -614,19 +614,45 @@ img {
    特效模块
    ============================================================ */
 .effects-grid {
-  columns: 2;
-  column-gap: 24px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(0, auto);
+  grid-auto-flow: dense;
+  gap: 20px;
   padding-bottom: 48px;
 }
 
+/* 默认卡：占 6 列（半宽） */
 .effects-grid .effect-card {
-  break-inside: avoid;
-  margin-bottom: 24px;
+  grid-column: span 6;
 }
 
-@media (max-width: 720px) {
+/* 宽卡：占 8 列（约 2/3 宽），视觉主卡 */
+.effects-grid .effect-card.wide {
+  grid-column: span 8;
+}
+
+/* 高卡：竖向拉伸（配合更高的 demo 区） */
+.effects-grid .effect-card.tall {
+  grid-column: span 4;
+}
+
+@media (max-width: 900px) {
+  .effects-grid .effect-card,
+  .effects-grid .effect-card.wide,
+  .effects-grid .effect-card.tall {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 560px) {
   .effects-grid {
-    columns: 1;
+    grid-template-columns: 1fr;
+  }
+  .effects-grid .effect-card,
+  .effects-grid .effect-card.wide,
+  .effects-grid .effect-card.tall {
+    grid-column: span 1;
   }
 }
 
@@ -660,17 +686,59 @@ img {
   justify-content: center;
 }
 
-/* 瀑布流错落：按位置交替改变效果区高度 */
-.effects-grid .effect-card:nth-child(3n) .effect-demo {
+/* 高卡效果区更高，制造纵向错落 */
+.effects-grid .effect-card.tall .effect-demo {
+  height: 420px;
+}
+
+/* 宽卡效果区略高，成为视觉主卡 */
+.effects-grid .effect-card.wide .effect-demo {
   height: 260px;
 }
 
-.effects-grid .effect-card:nth-child(4n) .effect-demo {
-  height: 190px;
+/* 卡片头：标题 + 编号 */
+.effect-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.effects-grid .effect-card:nth-child(5n) .effect-demo {
-  height: 240px;
+.effect-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* 卡片 hover：轻微浮起 + 左侧强调色 */
+.effect-card {
+  position: relative;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.effect-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 24px;
+  bottom: 24px;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
+  transition: transform var(--transition);
+}
+
+.effect-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.effect-card:hover::before {
+  transform: scaleY(1);
 }
 
 .effect-demo.canvas-demo {
