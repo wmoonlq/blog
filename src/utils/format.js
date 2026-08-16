@@ -28,7 +28,7 @@ export function readingTime(src) {
 
 export function relativeTime(dateStr) {
   if (!dateStr) return ''
-  const d = new Date(`${dateStr}T00:00:00`)
+  const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`)
   if (Number.isNaN(d.getTime())) return ''
   const days = Math.floor((Date.now() - d.getTime()) / 86400000)
   if (days < 1) return '今天'

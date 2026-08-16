@@ -5,6 +5,8 @@
 ## 索引
 
 - [2026-08-16 全站功能大升级](#2026-08-16-全站功能大升级)
+- [2026-08-16 搭建 AI 代理团队与循环编码验收](#2026-08-16-搭建-ai-代理团队与循环编码验收)
+- [2026-08-17 时间线 403 根治与 CR 修复](#2026-08-17-时间线-403-根治与-cr-修复)
 
 ---
 
@@ -175,3 +177,51 @@
 - 团队定义在 `.opencode/agent/`（name 匹配文件名，frontmatter 写 mode/permission）
 - `/devloop <需求>` 的模板即工作流提示词：子代理信息由主 agent 中转，验收不通过时把修复指令原样附给下一轮 dev
 - 开发日记需记录功能迭代与踩坑记录（同轮提交）
+
+---
+
+## 2026-08-17 时间线 403 根治与 CR 修复
+
+### 背景
+
+时间线页（GitHub commit 历史）运行时直连 `api.github.com`，用户浏览器环境返回 403（GFW/共享 NAT 限流）。code review 同时确认两个日期显示 bug（relativeTime 对完整 ISO 时间戳恒空、分组/显示时区不一致）。
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| 构建时生成时间线数据 | 新增根目录 `gen-commits.js`，拉取 commits API（最多 100 条，可设 `GITHUB_TOKEN` 提升限流）生成 `public/commits.json`（sha/message/date/url），构建时随 `public/` 复制进 dist |
+| 前端双数据源 | `TimelineView.vue` 优先读 `{BASE_URL}commits.json`（本地静态数据，无网络依赖），失败回退 GitHub API，再失败显示错误 + 重试；localStorage 5 分钟缓存保留 |
+| 日期显示修复 | 统一 `formatDate` 转访客本地时区后展示，分组取同字符串前 10 位（消除时区不一致）；`relativeTime` 兼容完整 ISO（含 `T` 时不再拼接 `T00:00:00`） |
+| 代码清理 | 删除未用字段（fullMessage/author），空态内联样式提取为 `.timeline-empty` 类（tokens 化） |
+
+### 踩坑记录
+
+#### 1. 浏览器直连 GitHub API 403
+
+- **现象**：时间线页 fetch commits API 报 403；本机走代理 curl 实测 200 且限流充足（remaining 60/60）
+- **原因**：403 非限流，是浏览器出口网络（GFW 干扰/运营商拦截）拒绝 api.github.com 直连；且未认证 API 限 60 次/h/IP，共享 NAT 下迟早打满
+- **解决**：把「拉数据」从运行时搬到构建期——前端改读构建产物 `public/commits.json`，彻底消除运行时外网依赖；API 仅作 dev 回退
+
+#### 1.5 不能改 workflow：PAT 无 workflow scope
+
+- **现象**：想把生成步骤加进 `.github/workflows/deploy.yml`，push 被拒：`refusing to allow a Personal Access Token to create or update workflow ... without workflow scope`
+- **原因**：GitHub 硬性限制——更新 `.github/workflows/` 下任何文件需 token 具备 `workflow` 权限；当前 fine-grained PAT 只有 Contents 读写
+- **解决**：生成脚本放仓库根目录 `gen-commits.js`，数据文件 `public/commits.json` 直接提交进仓库，每次发布前重新生成（本机走代理 curl 拉取后喂给脚本转换）；build 时经 `public/` 自动进 dist，工作流零改动
+
+#### 2. relativeTime 对 ISO 时间戳恒空
+
+- **现象**：每条提交显示 `2026-08-17 00:00 · `（相对时间恒空）
+- **原因**：`relativeTime` 内部 `new Date('${dateStr}T00:00:00')`，对含时区偏移的完整 ISO（如 `2026-08-17T00:00:48+08:00`）产生 Invalid Date；旧调用方传的都是 `YYYY-MM-DD` 未暴露
+- **解决**：`dateStr.includes('T')` 时直接 `new Date(dateStr)`，否则保持原拼接行为（旧调用方不变）
+
+#### 3. 分组与显示时区不一致
+
+- **现象**：分组按提交作者时区（`date.slice(0,10)`）切「天」，显示按访客浏览器本地时区格式化，非 +08 时区访客看到「2026-08-16 分组下显示 2026-08-17」
+- **解决**：数据层统一先 `formatDate`（访客本地时区）再存，分组与显示取同一字符串，天然一致
+
+### 架构要点
+
+- 时间线数据流：`gen-commits.js` 生成 → `public/commits.json` 提交进仓库 → build 时随 `public/` 进 dist → 前端静态读取；API 仅作 dev 环境回退
+- `import.meta.env.BASE_URL`（`/blog/`）拼接资源路径，保证子路径部署可用
+- 待办：PAT 若补 `workflow` 权限，可把生成步骤迁入 Actions（runner 直连 + `GITHUB_TOKEN` 限流 5000/h），commits.json 免手动维护
