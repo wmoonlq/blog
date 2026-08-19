@@ -85,6 +85,15 @@ const tech = ['Vite', 'Vue 3', 'Vue Router', 'Marked', 'GitHub Pages', 'Design T
           写文章与随笔：点击各页「写」按钮，填入 GitHub Token 即可在线保存并自动发布。
         </p>
       </section>
+
+      <section class="about-card">
+        <h2 class="about-title">版权声明</h2>
+        <p class="about-text">
+          本站文章与随笔为原创内容，转载或引用请注明出处。<br />
+          音乐、视频等媒体部分来自公开网络，仅作个人收藏与学习交流，版权归原作者所有，仅供试听/试看。<br />
+          如您认为本站内容侵犯了您的合法权益，请在<a href="#/notes" class="about-link">随笔</a>页面留言告知，我们将在核实后第一时间处理（删除相关内容）。
+        </p>
+      </section>
     </div>
   </div>
 </template>
