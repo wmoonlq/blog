@@ -3497,6 +3497,91 @@ img {
   z-index: 1;
 }
 
+/* 命令行页 — 假 cmd 窗口 */
+.cmd-window {
+  border: var(--border-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 48px;
+  cursor: text;
+}
+
+.cmd-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--hover-bg);
+  border-bottom: var(--border-card);
+}
+
+.cmd-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--divider);
+}
+
+.cmd-dot.on {
+  background: var(--accent);
+}
+
+.cmd-title {
+  margin-left: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cmd-body {
+  background: var(--pre-bg);
+  padding: 16px 18px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.7;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cmd-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.cmd-line.dim {
+  color: var(--text-secondary);
+}
+
+.cmd-line.err {
+  color: #B71C1C;
+}
+
+.cmd-row {
+  display: flex;
+  align-items: center;
+}
+
+.cmd-prompt {
+  color: var(--accent);
+  margin-right: 8px;
+  white-space: pre;
+  user-select: none;
+}
+
+.cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  caret-color: var(--accent);
+}
+
 .music-player {
   border: var(--border-card);
   border-radius: var(--radius);

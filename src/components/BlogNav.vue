@@ -15,6 +15,7 @@ const items = [
   { name: 'music', label: '音乐' },
   { name: 'tags', label: '标签' },
   { name: 'timeline', label: '时间线' },
+  { name: 'cmd', label: '命令行' },
   { name: 'workbench', label: '工作台' },
   { name: 'effects', label: '特效' },
   { name: 'about', label: '关于' }

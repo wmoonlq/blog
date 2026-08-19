@@ -56,6 +56,11 @@ const router = createRouter({
       component: () => import('./views/MusicView.vue')
     },
     {
+      path: '/cmd',
+      name: 'cmd',
+      component: () => import('./views/CmdView.vue')
+    },
+    {
       path: '/about',
       name: 'about',
       component: () => import('./views/AboutView.vue')
