@@ -34,7 +34,7 @@ jobs:
       - name: Download and commit
         run: |
           python - <<'EOF'
-          import glob, json, os, re, subprocess, sys, time
+          import glob, json, os, re, subprocess, sys, tempfile, time, urllib.request
 
           Q = 'downloads/queue.json'
           if not os.path.exists(Q):
@@ -61,6 +61,36 @@ jobs:
               s = str(s).replace('\\', '\\\\').replace('"', '\\"')
               return re.sub(r'[\r\n]+', ' ', s)
 
+          def get_bili_cookies(url):
+              """bilibili 需要真实 buvid3/buvid4 cookie（WAF 拒绝假值）；从官方 spi 接口获取并写入临时 cookies 文件"""
+              if 'bilibili.com' not in url:
+                  return None
+              ua = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                    '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36')
+              try:
+                  req = urllib.request.Request(
+                      'https://api.bilibili.com/x/frontend/finger/spi',
+                      headers={'User-Agent': ua, 'Referer': 'https://www.bilibili.com/'})
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      data = json.loads(r.read().decode('utf-8'))
+                  b3 = (data.get('data') or {}).get('b_3', '')
+                  b4 = (data.get('data') or {}).get('b_4', '')
+                  if not b3:
+                      print('::warning::no buvid3 from spi, download may fail')
+                      return None
+                  lines = ['# Netscape HTTP Cookie File']
+                  for name, val in (('buvid3', b3), ('buvid4', b4)):
+                      if val:
+                          lines.append(f'.bilibili.com\tTRUE\t/\tFALSE\t2147483647\t{name}\t{val}')
+                  ck = os.path.join(tempfile.gettempdir(), 'bili-cookies.txt')
+                  with open(ck, 'w', encoding='utf-8') as f:
+                      f.write('\n'.join(lines) + '\n')
+                  print(f'::notice::bilibili cookies fetched (buvid3={"yes" if b3 else "no"})')
+                  return ck
+              except Exception as e:
+                  print(f'::warning::failed to fetch bilibili cookies: {e}')
+                  return None
+
           title = str(q.get('title') or '').strip()
           slug = slugify(title) or f'video-{int(time.time() * 1000)}'
           if glob.glob(f'src/videos/{slug}.md'):
@@ -71,9 +101,10 @@ jobs:
           date = str(q.get('date') or time.strftime('%Y-%m-%d')).strip()
           base = f'public/videos/{slug}'
 
-          common = ['yt-dlp', '--no-playlist', '--no-warnings', '--impersonate', 'chrome']
-          if 'bilibili.com' in url:
-              common += ['--add-header', 'Referer:https://www.bilibili.com/']
+          common = ['yt-dlp', '--no-playlist', '--no-warnings']
+          cookies = get_bili_cookies(url)
+          if cookies:
+              common += ['--cookies', cookies]
 
           cmd = common + [
               '-f', 'bv*[height<=720]+ba/b[height<=720]',
