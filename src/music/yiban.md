@@ -3,6 +3,7 @@ title: "一半"
 artist: "薛之谦"
 date: "2026-08-16"
 source: "/blog/music/yiban.flac"
+cover: "/blog/music/covers/yiban.jpg"
 lyrics: "/blog/music/yiban.lrc"
 type: "music"
 ---

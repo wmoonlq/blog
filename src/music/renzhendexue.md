@@ -3,6 +3,7 @@ title: "认真的雪"
 artist: "薛之谦"
 date: "2026-08-16"
 source: "/blog/music/renzhendexue.flac"
+cover: "/blog/music/covers/renzhendexue.jpg"
 lyrics: "/blog/music/renzhendexue.lrc"
 type: "music"
 ---

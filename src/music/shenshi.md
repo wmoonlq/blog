@@ -3,6 +3,7 @@ title: "绅士"
 artist: "薛之谦"
 date: "2026-08-16"
 source: "/blog/music/shenshi.flac"
+cover: "/blog/music/covers/shenshi.jpg"
 lyrics: "/blog/music/shenshi.lrc"
 type: "music"
 ---

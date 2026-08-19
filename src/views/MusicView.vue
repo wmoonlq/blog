@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { currentTrack } from '../stores/music'
 import { getAllMusic } from '../utils/music'
 import MusicPlayer from '../components/MusicPlayer.vue'
 import MediaManager from '../components/MediaManager.vue'
@@ -69,63 +70,72 @@ function onUploaded(item) {
 </script>
 
 <template>
-  <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">音乐</h1>
-      <p class="hero-sub">耳朵的收藏 · {{ tracks.length }} 首</p>
-      <div class="hero-actions">
-        <button class="btn hero-btn" @click="showUpload = !showUpload">
-          {{ showUpload ? '收起上传' : '上传音乐' }}
-        </button>
-        <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
-          {{ showManage ? '退出管理' : '管理' }}
-        </button>
-      </div>
-    </header>
+  <div class="music-page">
+    <div
+      v-if="currentTrack && currentTrack.cover"
+      class="music-bg"
+      :style="{ backgroundImage: `url(${currentTrack.cover})` }"
+    ></div>
+    <div v-if="currentTrack && currentTrack.cover" class="music-bg-veil"></div>
 
-    <MediaManager
-      v-if="showUpload"
-      kind="music"
-      media-dir="public/music"
-      meta-dir="src/music"
-      accept="audio/mpeg,audio/ogg,audio/wav,audio/flac,audio/aac"
-      :max-mb="100"
-      style="margin-bottom: 32px"
-      @uploaded="onUploaded"
-    />
-
-    <div v-if="deleting" class="delete-bar">
-      <div class="delete-bar-main">
-        <p class="delete-bar-title">删除「{{ deleting.title }}」</p>
-        <p class="delete-bar-sub">将删除音频文件与元数据，需要操作密码</p>
-      </div>
-      <input
-        v-model="deletePwd"
-        class="input delete-pwd"
-        type="password"
-        placeholder="操作密码"
-        @keydown.enter="confirmDelete"
-      />
-      <button class="btn btn-sm" @click="deletePwd = '123456'">一键填充</button>
-      <button class="btn btn-sm btn-danger" @click="confirmDelete">确认删除</button>
-      <button class="btn btn-sm" @click="cancelDelete">取消</button>
-      <p v-if="deleteMsg" class="editor-msg">{{ deleteMsg }}</p>
-    </div>
-
-    <section class="music-main">
-      <MusicPlayer :tracks="tracks" />
-
-      <div v-if="showManage && tracks.length" class="mp-manage">
-        <p class="mp-manage-title">管理曲目</p>
-        <div v-for="t in tracks" :key="t.slug" class="mp-manage-row">
-          <span class="mp-manage-name">{{ t.title }}<span v-if="t.pending" class="video-card-pending" style="position: static; margin-left: 8px">待发布</span></span>
-          <button class="btn btn-sm" @click="startDelete(t)">删除</button>
+    <div class="page">
+      <header class="hero">
+        <h1 class="hero-title">音乐</h1>
+        <p class="hero-sub">耳朵的收藏 · {{ tracks.length }} 首</p>
+        <div class="hero-actions">
+          <button class="btn hero-btn" @click="showUpload = !showUpload">
+            {{ showUpload ? '收起上传' : '上传音乐' }}
+          </button>
+          <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
+            {{ showManage ? '退出管理' : '管理' }}
+          </button>
         </div>
+      </header>
+
+      <MediaManager
+        v-if="showUpload"
+        kind="music"
+        media-dir="public/music"
+        meta-dir="src/music"
+        accept="audio/mpeg,audio/ogg,audio/wav,audio/flac,audio/aac"
+        :max-mb="100"
+        style="margin-bottom: 32px"
+        @uploaded="onUploaded"
+      />
+
+      <div v-if="deleting" class="delete-bar">
+        <div class="delete-bar-main">
+          <p class="delete-bar-title">删除「{{ deleting.title }}」</p>
+          <p class="delete-bar-sub">将删除音频文件与元数据，需要操作密码</p>
+        </div>
+        <input
+          v-model="deletePwd"
+          class="input delete-pwd"
+          type="password"
+          placeholder="操作密码"
+          @keydown.enter="confirmDelete"
+        />
+        <button class="btn btn-sm" @click="deletePwd = '123456'">一键填充</button>
+        <button class="btn btn-sm btn-danger" @click="confirmDelete">确认删除</button>
+        <button class="btn btn-sm" @click="cancelDelete">取消</button>
+        <p v-if="deleteMsg" class="editor-msg">{{ deleteMsg }}</p>
       </div>
 
-      <p v-if="!tracks.length && !showManage" class="hero-sub" style="padding: 48px 0">
-        还没有音乐。点「上传音乐」添加第一首。
-      </p>
-    </section>
+      <section class="music-main">
+        <MusicPlayer :tracks="tracks" />
+
+        <div v-if="showManage && tracks.length" class="mp-manage">
+          <p class="mp-manage-title">管理曲目</p>
+          <div v-for="t in tracks" :key="t.slug" class="mp-manage-row">
+            <span class="mp-manage-name">{{ t.title }}<span v-if="t.pending" class="video-card-pending" style="position: static; margin-left: 8px">待发布</span></span>
+            <button class="btn btn-sm" @click="startDelete(t)">删除</button>
+          </div>
+        </div>
+
+        <p v-if="!tracks.length && !showManage" class="hero-sub" style="padding: 48px 0">
+          还没有音乐。点「上传音乐」添加第一首。
+        </p>
+      </section>
+    </div>
   </div>
 </template>

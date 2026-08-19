@@ -3462,6 +3462,41 @@ img {
   padding-bottom: 48px;
 }
 
+/* 音乐页 — 当前曲目封面模糊背景 */
+.music-page {
+  position: relative;
+  overflow: hidden;
+}
+
+.music-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(56px);
+  transform: scale(1.35);
+  opacity: 0.45;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.music-bg-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0.55;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.music-page .page {
+  position: relative;
+  z-index: 1;
+}
+
 .music-player {
   border: var(--border-card);
   border-radius: var(--radius);
