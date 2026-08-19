@@ -1,0 +1,148 @@
+name: Download video via yt-dlp
+
+on:
+  push:
+    branches: [main]
+    paths: ['downloads/queue.json']
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: yt-dlp
+  cancel-in-progress: true
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install yt-dlp
+        run: pip install -q yt-dlp
+
+      - name: Download and commit
+        run: |
+          python - <<'EOF'
+          import glob, json, os, re, subprocess, sys, time
+
+          Q = 'downloads/queue.json'
+          if not os.path.exists(Q):
+              print('::notice::no queue file, nothing to do')
+              sys.exit(0)
+
+          try:
+              with open(Q, encoding='utf-8') as f:
+                  q = json.load(f)
+          except Exception as e:
+              print(f'::error::queue.json parse failed: {e}')
+              sys.exit(1)
+
+          url = str(q.get('url') or '').strip()
+          if not url:
+              print('::notice::queue is empty, nothing to do')
+              sys.exit(0)
+
+          def slugify(s):
+              s = re.sub(r'[^\w\u4e00-\u9fa5]+', '-', str(s).strip().lower())
+              return re.sub(r'-+', '-', s).strip('-')
+
+          def esc(s):
+              s = str(s).replace('\\', '\\\\').replace('"', '\\"')
+              return re.sub(r'[\r\n]+', ' ', s)
+
+          title = str(q.get('title') or '').strip()
+          slug = slugify(title) or f'video-{int(time.time() * 1000)}'
+          if glob.glob(f'src/videos/{slug}.md'):
+              slug = f'{slug}-{int(time.time() * 1000)}'
+
+          category = str(q.get('category') or '').strip()
+          collection = str(q.get('collection') or '').strip()
+          date = str(q.get('date') or time.strftime('%Y-%m-%d')).strip()
+          base = f'public/videos/{slug}'
+
+          cmd = [
+              'yt-dlp', '--no-playlist', '--no-warnings',
+              '-f', 'bv*[height<=720]+ba/b[height<=720]',
+              '--merge-output-format', 'mp4',
+              '--remux-video', 'mp4',
+              '--max-filesize', '300M',
+              '-o', f'{base}.%(ext)s',
+              url,
+          ]
+          print('::group::yt-dlp download')
+          print('running:', ' '.join(cmd))
+          if subprocess.run(cmd, text=True).returncode != 0:
+              print('::error::yt-dlp download failed')
+              sys.exit(1)
+          print('::endgroup::')
+
+          image_exts = ('.jpg', '.jpeg', '.png', '.webp')
+          media = [p for p in glob.glob(f'{base}.*') if not p.lower().endswith(image_exts)]
+          if not media:
+              print('::error::no media file produced')
+              sys.exit(1)
+          media_path = sorted(media)[0]
+          media_name = os.path.basename(media_path)
+
+          poster = ''
+          subprocess.run([
+              'yt-dlp', '--no-playlist', '--no-warnings',
+              '--skip-download',
+              '--write-thumbnail', '--convert-thumbnails', 'jpg',
+              '-o', f'{base}-poster.%(ext)s',
+              url,
+          ], text=True)
+          for p in sorted(glob.glob(f'{base}-poster.*')):
+              if p.lower().endswith(('.jpg', '.jpeg', '.png')):
+                  poster = f'/blog/videos/{os.path.basename(p)}'
+              else:
+                  os.remove(p)
+
+          for p in glob.glob(f'{base}.*'):
+              if os.path.basename(p) != media_name and not p.lower().endswith(image_exts):
+                  os.remove(p)
+
+          lines = [
+              '---',
+              f'title: "{esc(title or slug)}"',
+              f'date: "{esc(date)}"',
+              f'source: "/blog/videos/{media_name}"',
+              'type: "video"',
+          ]
+          if category:
+              lines.append(f'category: "{esc(category)}"')
+          if collection:
+              lines.append(f'collection: "{esc(collection)}"')
+          if poster:
+              lines.append(f'poster: "{poster}"')
+          lines += ['---', '', title or slug]
+
+          with open(f'src/videos/{slug}.md', 'w', encoding='utf-8') as f:
+              f.write('\n'.join(lines) + '\n')
+
+          print(f'::notice::downloaded {media_name} -> src/videos/{slug}.md')
+          EOF
+
+      - name: Commit, push and trigger deploy
+        run: |
+          if ! git diff --quiet -- public/videos src/videos; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add public/videos src/videos
+            git commit -m 'feat: download video via yt-dlp' --no-verify
+            git push
+            gh workflow run deploy.yml --ref main
+          else
+            echo 'no changes'
+          fi

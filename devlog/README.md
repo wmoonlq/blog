@@ -307,8 +307,9 @@
 |---|---|
 | 视频页「下载视频」入口 | `VideoDownloader.vue`：粘贴链接（必填）+ 标题/分类/合集（可选），密码 + Token 门禁（与上传一致） |
 | 队列文件 | 提交后把 `{url,title,category,collection,date,requestedAt,status:'queued'}` 写入 `downloads/queue.json`（Contents API，已有文件需带 sha 覆盖） |
-| 下载 workflow | 新增 `.github/workflows/download.yml`，`on: push: paths:['downloads/queue.json']` 触发；安装 yt-dlp + yt-dlp-ejs → Python 脚本读队列 → 抓取 720p（`bv*[height<=720]+ba`）≤300M，合并/转封装 mp4 → 写 `public/videos/` + 生成 `src/videos/*.md`（含自动下载的 poster 封面）→ 提交推送 |
+| 下载 workflow | 新增 `.github/workflows/download.yml`，`on: push: paths:['downloads/queue.json']` 触发；安装 yt-dlp + deno（JS challenge 引擎）→ Python 脚本读队列 → 抓取 720p（`bv*[height<=720]+ba`）≤300M，合并/转封装 mp4 → 写 `public/videos/` + 生成 `src/videos/*.md`（含自动下载的 poster 封面）→ 提交推送 |
 | 部署防抖 | `deploy.yml` 加 `paths-ignore: ['downloads/**']`，写队列文件不再触发空构建；下载 workflow 提交只 `git add public/videos src/videos`，不碰 `downloads/`，无自触发死循环 |
+| 显式触发部署 | GITHUB_TOKEN 的 push 不会触发下游 workflow，故 download.yml 提交后 `gh workflow run deploy.yml --ref main` 显式调度部署（deploy.yml 增 `workflow_dispatch`） |
 
 ### 踩坑记录
 
@@ -327,10 +328,15 @@
 - **现象**：PowerShell 里裸 `npm run build` 返回空、dist 无更新
 - **解决**：Windows 下用 `cmd /c "npm run build"` 执行（npm 是 .cmd 批处理）
 
+#### 4. GITHUB_TOKEN 的 push 不触发下游 workflow
+
+- **现象**：download.yml 提交视频后，deploy.yml 未运行——GitHub 平台行为：GITHUB_TOKEN 触发的事件（push 等）不会创建新的 workflow run，防递归
+- **解决**：workflow_dispatch 是例外。deploy.yml 增 `workflow_dispatch`，download.yml 提权 `actions: write`，push 成功后 `gh workflow run deploy.yml --ref main` 显式调度（gh 随 runner 预装，自动用 GITHUB_TOKEN 认证）
+
 ### 架构要点
 
-- 数据流：前端 `VideoDownloader` → `downloads/queue.json`（密码+Token）→ push → `download.yml`（yt-dlp）→ 提交 `public/videos` + `src/videos` → push → `deploy.yml` 自动发布
-- yt-dlp 用 PyPI 上游（RanT711 fork 与上游同源），`npm i -g yt-dlp-ejs` 保证 YouTube 完整支持（失败不阻断其他站点）
+- 数据流：前端 `VideoDownloader` → `downloads/queue.json`（密码+Token）→ push → `download.yml`（yt-dlp）→ 提交 `public/videos` + `src/videos` → `gh workflow run deploy.yml` 显式调度部署
+- yt-dlp 用 PyPI 上游（RanT711 fork 与上游同源），`denoland/setup-deno` 提供 JS challenge 引擎（YouTube 支持所需，github runner 无 deno）；YouTube 数据中心 IP 常见 bot 拦截，B 站等站点不受影响
 - 下载失败仅 workflow 标红，不污染仓库；队列文件仍在，人工重试可重新 push 或 workflow_dispatch 手动触发
 - 待办：若 PAT 补 `workflow` 权限，可改为前端直接 `workflow_dispatch` 触发，省去 push 一程
 

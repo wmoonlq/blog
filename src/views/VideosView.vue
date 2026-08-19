@@ -5,6 +5,7 @@ import { renderMarkdown } from '../utils/markdown'
 import VideoPlayer from '../components/VideoPlayer.vue'
 import VideoThumb from '../components/VideoThumb.vue'
 import MediaManager from '../components/MediaManager.vue'
+import VideoDownloader from '../components/VideoDownloader.vue'
 import { checkPassword, getToken, deleteFile } from '../utils/githubFiles'
 import { getLocalUploads, addLocalUpload, removeLocalUpload, isLocalUpload } from '../utils/localMedia'
 
@@ -22,6 +23,7 @@ const videos = allVideos
 const active = ref(null)
 const activeCategory = ref('')
 const showUpload = ref(false)
+const showDownload = ref(false)
 const showManage = ref(false)
 const deleting = ref(null) // 待删除的视频
 const deletePwd = ref('')
@@ -121,11 +123,19 @@ function onUploaded(item) {
         <button class="btn hero-btn" @click="showUpload = !showUpload">
           {{ showUpload ? '收起上传' : '上传视频' }}
         </button>
+        <button class="btn hero-btn" @click="showDownload = !showDownload">
+          {{ showDownload ? '收起下载' : '下载视频' }}
+        </button>
         <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
           {{ showManage ? '退出管理' : '管理' }}
         </button>
       </div>
     </header>
+
+    <VideoDownloader
+      v-if="showDownload"
+      style="margin-bottom: 32px"
+    />
 
     <MediaManager
       v-if="showUpload"
