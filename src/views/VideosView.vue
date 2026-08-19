@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import { getAllVideos, isBilibili } from '../utils/videos'
+import { getAllVideos, isBilibili, getCategories, getCollections } from '../utils/videos'
 import { renderMarkdown } from '../utils/markdown'
 import VideoPlayer from '../components/VideoPlayer.vue'
 import VideoThumb from '../components/VideoThumb.vue'
@@ -15,7 +15,7 @@ const allVideos = computed(() => {
   const builtSlugs = new Set(built.map((v) => v.slug))
   const local = getLocalUploads()
     .filter((u) => u.kind === 'video' && !builtSlugs.has(u.slug))
-    .map((u) => ({ ...u, pending: true, content: '' }))
+    .map((u) => ({ ...u, pending: true, collections: [], category: u.category || '未分类', content: '' }))
   return [...local, ...built]
 })
 
@@ -30,25 +30,35 @@ const deletePwd = ref('')
 const deleteMsg = ref('')
 
 const categories = computed(() => {
-  const map = new Map()
-  allVideos.value.forEach((v) => map.set(v.category || '未分类', (map.get(v.category || '未分类') || 0) + 1))
-  return [...map.entries()]
+  const counts = new Map()
+  allVideos.value.forEach((v) => counts.set(v.category, (counts.get(v.category) || 0) + 1))
+  const list = getCategories().map((name) => [name, counts.get(name) || 0])
+  const rest = [...counts.entries()].filter(([name]) => !getCategories().includes(name))
+  return [...list, ...rest]
 })
 
 const filtered = computed(() =>
   activeCategory.value
-    ? allVideos.value.filter((v) => (v.category || '未分类') === activeCategory.value)
+    ? allVideos.value.filter((v) => v.category === activeCategory.value)
     : allVideos.value
 )
 
 const collections = computed(() => {
-  const map = new Map()
-  filtered.value.forEach((v) => {
-    const key = v.collection || '单集'
-    if (!map.has(key)) map.set(key, [])
-    map.get(key).push(v)
+  const groups = []
+  const inAny = new Set()
+  getCollections().forEach((col) => {
+    const vids = filtered.value.filter((v) => (v.collections || []).some((c) => c.id === col.id))
+    vids.forEach((v) => inAny.add(v.slug))
+    // 全部分区下显示空集合（可被手动挑选）；指定分区时隐藏无内容的集合
+    if (vids.length || !activeCategory.value) {
+      groups.push({ col, videos: vids })
+    }
   })
-  return [...map.entries()]
+  const loose = filtered.value.filter((v) => !inAny.has(v.slug))
+  if (loose.length) {
+    groups.push({ col: { id: '__loose__', name: '未加入集合', description: '', sort: 999 }, videos: loose })
+  }
+  return groups
 })
 
 async function play(video) {
@@ -192,15 +202,16 @@ function onUploaded(item) {
       <div v-if="active.content.trim()" class="prose video-desc" v-html="renderMarkdown(active.content)"></div>
     </section>
 
-    <template v-if="filtered.length">
-      <section v-for="[col, list] in collections" :key="col" class="video-col">
+    <template v-if="filtered.length || !activeCategory">
+      <section v-for="g in collections" :key="g.col.id" class="video-col">
         <div class="video-col-head">
-          <h2 class="video-col-title">{{ col }}</h2>
-          <span class="video-col-count">{{ list.length }} 集</span>
+          <h2 class="video-col-title">{{ g.col.name }}</h2>
+          <span class="video-col-count">{{ g.videos.length }} 集</span>
         </div>
-        <div class="video-grid">
+        <p v-if="g.col.description" class="video-col-desc">{{ g.col.description }}</p>
+        <div v-if="g.videos.length" class="video-grid">
           <button
-            v-for="v in list"
+            v-for="v in g.videos"
             :key="v.slug"
             class="video-card"
             :class="{ on: active && active.slug === v.slug }"
@@ -213,6 +224,7 @@ function onUploaded(item) {
             <span class="video-card-date">{{ v.date }}</span>
           </button>
         </div>
+        <p v-else class="video-col-empty">暂无视频</p>
       </section>
     </template>
     <p v-else class="hero-sub" style="padding: 96px 0">该分类下暂无视频。</p>

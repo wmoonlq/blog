@@ -1,0 +1,9 @@
+{
+  "categories": ["动画", "自然", "教程"],
+  "collections": [
+    { "id": "blender", "name": "Blender 开源动画", "description": "Blender 官方开源动画样片", "sort": 0 },
+    { "id": "mdn", "name": "MDN 样片", "description": "来自 MDN 的 CC0 示例视频", "sort": 1 },
+    { "id": "juc", "name": "JUC 并发编程全套教程", "description": "黑马程序员 Java 并发编程教程", "sort": 2 },
+    { "id": "favorites", "name": "我的收藏", "description": "手动挑选收藏的视频（空集合示例）", "sort": 3 }
+  ]
+}

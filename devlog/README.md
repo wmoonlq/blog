@@ -10,6 +10,7 @@
 - [2026-08-19 音乐封面与模糊背景](#2026-08-19-音乐封面与模糊背景)
 - [2026-08-19 博客命令行窗口](#2026-08-19-博客命令行窗口)
 - [2026-08-19 视频链接下载（yt-dlp + Actions）](#2026-08-19-视频链接下载yt-dlp--actions)
+- [2026-08-20 视频收藏夹式多集合 + 分区](#2026-08-20-视频收藏夹式多集合--分区)
 - [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
 - [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
 - [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
@@ -477,5 +478,41 @@
 - 输出路径：执行期流式 `output`（前端 dim 渲染显示进度）→ 结束时按起点 splice 替换为干净 `result.output` + `[退出码]`
 - 退出码非 0 显示为 err 红；`chcp 65001` 防中文乱码；`BRIDGE_SHELL=powershell` 可换 shell（标记包装会切到 `$?` 分支）
 - 待办：真 PTY（node-pty/ConPTY）以获得完整终端能力；token 固定写死可改动态配对
+
+---
+
+## 2026-08-20 视频收藏夹式多集合 + 分区
+
+### 背景
+
+用户反馈视频模块不够好用，要求对标 B 站：自定义分区（分类）+ 手动挑选集合 + 创建集合。确认需求为「收藏夹式多对多集合 + 单分区自定义分区列表 + 仅展示层改进（数据由代理在仓库维护）」。
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| 单一数据源 | 新增 `src/videos/video-meta.json`：`categories`（分区列表）+ `collections`（id/name/description/sort），空集合/排序/描述都由此驱动 |
+| 数据迁移 | 5 个视频 md 由 `collection: "名称"` → `collections: ["id"]`（blender×2 / mdn×2 / juc×1） |
+| utils/videos.js | `getCategories()`/`getCollections()`（按 sort 排序）；`resolveCollections` 按 id 解析、对旧 `collection` 名称先按名称匹配清单再生成临时集合（上传/下载流程仍写旧字段） |
+| 视频页展示 | 分区 chips 来自清单（含空分区 + 清单外新分类兜底）；集合分组多对多（一视频可属多集合），「全部」显示空集合占位、「指定分区」隐藏空集合、未入集合归「未加入集合」；集合带描述 |
+| 样式 | `.video-col-desc`（集合描述）、`.video-col-empty`（空集合虚线占位），全走 tokens |
+
+### 踩坑记录
+
+#### 1. 待发布本地条目导致页面崩溃
+
+- **现象**：本地待发布条目（`getLocalUploads`）没有 `collections` 字段，`v.collections.some(...)` 抛 TypeError，整个视频页渲染失败
+- **解决**：`allVideos` computed 对 local 条目归一化 `collections: []`、`category: u.category || '未分类'`，分组处再加 `(v.collections || [])` 防御
+
+#### 2. 旧 `collection` 字段兼容名存实亡
+
+- **现象**：`resolveCollections` 的 legacy 回退生成 `{id: legacy}` 伪集合，但视图只遍历清单集合 id → 新上传的带集合名视频落进「未加入集合」，展示层回归
+- **解决**：回退时先按 `name → 清单集合` 匹配，命中则用真实集合对象；未命中才生成临时集合
+
+### 架构要点
+
+- 数据流：`video-meta.json`（分区/集合定义） + 视频 md `collections: ["id"]`（归属） → `utils/videos.js` 解析 → `VideosView.vue` 分组渲染
+- 集合多对多：视频按 `collections` 数组进入各集合分组，`inAny` 集合去重避免落入「未加入集合」
+- 待办：如后续要网页端「创建集合/手动挑选」，可在管理模式下做清单文件（video-meta.json + md frontmatter）的写入 UI（复用 githubFiles 密码+Token）
 
 ---

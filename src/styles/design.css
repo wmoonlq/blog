@@ -3315,6 +3315,21 @@ img {
   color: var(--text-secondary);
 }
 
+.video-col-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -6px 0 14px;
+}
+
+.video-col-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 28px 0;
+  text-align: center;
+  border: 1px dashed var(--divider);
+  border-radius: var(--radius);
+}
+
 .video-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

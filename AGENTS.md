@@ -60,12 +60,13 @@
 |---|---|---|---|
 | 文章 | `src/posts/*.md` | — | frontmatter: title/date/tags |
 | 随笔 | `src/notes/*.md` | — | frontmatter: date（title 可选） |
-| 视频 | `src/videos/*.md` | `public/videos/` | frontmatter: title/date/source/category/collection/poster/type |
+| 视频 | `src/videos/*.md` | `public/videos/` | frontmatter: title/date/source/category/collections/poster/type |
 | 音乐 | `src/music/*.md` | `public/music/` | frontmatter: title/date/source/artist/cover/lyrics/type |
 | 背景图 | — | `public/bg/` | 由特效页上传，无元数据 |
 
 - 媒体上传/删除统一走 `src/utils/githubFiles.js`：密码门禁 `123456`（前端校验防刷），Token 复用 localStorage `notes-token`（fine-grained PAT）
 - 上传后立即显示：`src/utils/localMedia.js` 本地记录待发布条目（带「待发布」角标），构建完成按 slug 去重自动转正式
+- 视频分类/集合由 `src/videos/video-meta.json` 单一数据源驱动：`categories`（分区列表）+ `collections`（id/name/description/sort）；视频 md 用 `collections: ["id"]` 数组（多对多、可空集合），旧 `collection: "名称"` 字段由 `utils/videos.js` 按名称匹配回退兼容（上传/下载流程仍写旧字段）
 - 视频支持「从链接下载」：`src/components/VideoDownloader.vue` 把链接写入 `downloads/queue.json` → push 触发 `.github/workflows/download.yml`（yt-dlp 抓取 720p≤300M 到 `public/videos/` + 生成元数据 md + 自动提交）→ 该 workflow 用 `gh workflow run deploy.yml` 显式触发部署（GITHUB_TOKEN 的 push 不会触发下游 workflow）；deploy.yml 已 `paths-ignore: ['downloads/**']` 避免队列文件触发空构建
 - **B 站限制**：download.yml 已内置「调 `x/frontend/finger/spi` 拿真实 buvid3/buvid4 写 cookies」逻辑，但 GitHub runner（美国机房 IP）对 B 站内容接口仍 412 → 浏览器「从链接下载」对 B 站不可用，只能本机下载（直连 + 真实 cookie + ffmpeg，见 devlog 踩坑 5）；本机 ffmpeg 可用 `pip install imageio-ffmpeg` 取静态二进制
 - 歌词：LRC 解析在 `src/utils/lrc.js`（支持 `[offset:]` 标签）；播放器内置歌词校准（±0.1/0.5s，按歌曲记忆）；官方歌词源可用网易云 API `music.163.com/api/song/lyric?id=`
