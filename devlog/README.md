@@ -11,6 +11,7 @@
 - [2026-08-19 博客命令行窗口](#2026-08-19-博客命令行窗口)
 - [2026-08-19 视频链接下载（yt-dlp + Actions）](#2026-08-19-视频链接下载yt-dlp--actions)
 - [2026-08-20 视频收藏夹式多集合 + 分区](#2026-08-20-视频收藏夹式多集合--分区)
+- [2026-08-20 音乐 QQ 音乐对标升级](#2026-08-20-音乐-qq-音乐对标升级)
 - [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
 - [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
 - [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
@@ -514,5 +515,51 @@
 - 数据流：`video-meta.json`（分区/集合定义） + 视频 md `collections: ["id"]`（归属） → `utils/videos.js` 解析 → `VideosView.vue` 分组渲染
 - 集合多对多：视频按 `collections` 数组进入各集合分组，`inAny` 集合去重避免落入「未加入集合」
 - 待办：如后续要网页端「创建集合/手动挑选」，可在管理模式下做清单文件（video-meta.json + md frontmatter）的写入 UI（复用 githubFiles 密码+Token）
+
+---
+
+## 2026-08-20 音乐 QQ 音乐对标升级
+
+### 背景
+
+用户要求音乐模块对标 QQ 音乐。确认 8 项能力全做：唱片播放页布局、系统媒体控制（Media Session）、歌单管理（多歌单/排序/删除）、最近播放历史、睡眠定时器、上传补封面歌词、红心收藏、倍速。
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| 个性化存储 | 新增 `src/stores/musicPrefs.js`：收藏（`music-favorites`）、歌单（`music-playlists`）、最近播放（`music-history`）全在 localStorage，deep watch 持久化，不写仓库 |
+| store 扩展 | `music.js` 增 `rate`（倍速，持久化 music-prefs + 同步 playbackRate）、`sleepEnd/sleepMin` 睡眠定时（到点暂停、刷新恢复）、Media Session（metadata + play/pause/prev/next/seekto）、`playTracks(list,i)` 播放即建队、`playIndex/playTracks` 写历史 |
+| 唱片播放页 | `MusicPlayer.vue` 封面改旋转唱片（`.mp-disc` 深色唱片 + 圆形封面 + 主轴，播放转/暂停停），歌词/列表布局保留 |
+| 红心 | 播放器 + 迷你条 ♥/♡ 切换，「♥ 收藏」视图 |
+| 歌单 | 播放器「+歌单」弹窗（勾选加入/移出 + 内联新建）；音乐页视图条（全部/收藏/最近/各歌单/新建）+ 歌单管理面板（改名/删除/▲▼排序/移除） |
+| 最近播放 | 播放即入历史（最新在前、去重、限 100），「最近播放」视图 |
+| 倍速 | 0.5~2× 弹窗选择，`music.rate` 全局生效并持久化 |
+| 睡眠定时 | 15/30/60/90 分钟 + 关闭，按钮显示实时剩余，到点暂停，`music-sleep-end` 刷新恢复 |
+| 上传补附件 | `MediaManager` kind=music 新增封面/歌词 .lrc/逐字 .yrc 可选文件，上传到 `covers/` 与 `music/`，md 写 `cover`/`lyrics`/`yrc`；附件大小校验 |
+| 样式 | `.mp-disc/.mp-fav/.mp-pop*/.mp-viewbar/.pl-manage/.mp-tools/.mini-fav` + `mp-spin` 动画，全走 tokens（唱片底固定色 `#1a1816`，同 `.video video background:#000` 先例） |
+
+### 踩坑记录
+
+#### 1. 睡眠倒计时冻结（验收不通过，返工）
+
+- **现象**：`sleepRemain = computed(() => sleepEnd ? Math.ceil((sleepEnd - Date.now())/1000) : 0)` 只依赖响应式 `sleepEnd`，`Date.now()` 非响应式 → 按钮上的剩余时间从设置起冻结，直到到点才消失
+- **解决**：加每秒刷新的响应式 `nowTs = ref(Date.now())`（ticker 里 `nowTs.value = Date.now()`），`sleepRemain` 依赖它，倒计时实时递减
+
+#### 2. 播放与视图解耦：setTracks 不能随视图覆写全局队列
+
+- **现象**：旧版 MusicPlayer 在 `props.tracks` 变化时 `setTracks` 覆写全局队列，切歌单视图会让正在播的歌曲 index 失效/错位
+- **解决**：删除 `setTracks` 依赖，改为点击歌曲调 `playTracks(props.tracks, i)`「播放即建队」；视图只是展示源，切换不打断播放；列表高亮改按 slug 匹配而非 index
+
+#### 3. 睡眠弹窗高亮误触发
+
+- **现象**：`sleepRemain <= m*60` 判断在剩余时间低于选项时多选同时点亮
+- **解决**：记录 `music.sleepMin` 所选分钟数做精确匹配
+
+### 架构要点
+
+- 数据流：`musicPrefs.js`（收藏/歌单/历史 localStorage） + `music.js`（播放态/倍速/睡眠/Media Session） → MusicPlayer/MiniPlayer/MusicView 消费
+- 队列解耦：全局 `music.tracks` 由 App.vue `getAllMusic()` 种子，播放页视图仅决定「点了播哪一组」；跨页播放、切视图不中断
+- 待办：桌面歌词/歌词全屏、封面旋转速度跟随 BPM、Media Session 锁屏歌词 art 类型按扩展名派生
 
 ---

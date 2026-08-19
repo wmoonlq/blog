@@ -2,18 +2,20 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { parseLRC, findLyricIndex, parseYRC, findCharIndex } from '../utils/lrc'
 import {
-  music, currentTrack, progress, modeLabel,
-  setTracks, cycleMode, togglePlay, playIndex, next, prev,
-  seekTo, seekToLyric, setVolume, getAudio, setLyricAdjust
+  music, currentTrack, progress, modeLabel, sleepRemain,
+  RATE_STEPS, cycleMode, togglePlay, playTracks, next, prev,
+  seekTo, seekToLyric, setVolume, getAudio, setLyricAdjust,
+  setRate, startSleep, cancelSleep
 } from '../stores/music'
+import {
+  prefs, isFavorite, toggleFavorite, createPlaylist,
+  addToPlaylist, removeFromPlaylist, isInPlaylist
+} from '../stores/musicPrefs'
 import { ensureAudioEngine, resumeAudioCtx, getAnalyser } from '../stores/audioEngine'
 
 const props = defineProps({
   tracks: { type: Array, required: true }
 })
-
-// 同步曲库到全局
-setTracks(props.tracks)
 
 const lyricBoxRef = ref(null)
 const lyricItemRefs = ref([])
@@ -30,6 +32,9 @@ const kLine = ref(-1)
 const kChar = ref(-1)
 const ctx = ref(null)
 let raf = null
+
+const openPop = ref('') // '' | 'rate' | 'sleep' | 'playlist'
+const newPlName = ref('')
 
 const OFFSET_KEY = 'lyric-adjust'
 
@@ -51,13 +56,24 @@ const current = computed(() => music.current)
 const duration = computed(() => music.duration)
 const volume = computed(() => music.volume)
 const mode = computed(() => music.mode)
-const index = computed(() => music.index)
+const slug = computed(() => (track.value ? track.value.slug : ''))
+const isFav = computed(() => slug.value && isFavorite(slug.value))
+
+function isCurrent(s) {
+  return slug.value && s === slug.value
+}
 
 function fmt(s) {
   if (!isFinite(s) || s < 0) s = 0
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${String(sec).padStart(2, '0')}`
+}
+
+function fmtRemain(s) {
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return h ? `${h}小时${m}分` : `${m}分钟`
 }
 
 // ---- 歌词加载 ----
@@ -233,14 +249,6 @@ watch(
 )
 
 watch(
-  () => props.tracks,
-  () => {
-    setTracks(props.tracks)
-    loadLyrics()
-  }
-)
-
-watch(
   () => music.playing,
   (v) => {
     if (v) {
@@ -253,7 +261,6 @@ watch(
 
 onMounted(() => {
   window.addEventListener('resize', () => raf && drawSpectrum())
-  // 如果全局正在播放，恢复频谱
   if (music.playing) {
     resumeAudioCtx()
     drawSpectrum()
@@ -265,17 +272,77 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
   // 注意：绝不 close 全局 audioCtx（会切断全局音频输出）
 })
+
+// ---- 播放与歌单操作 ----
+function playAt(i) {
+  playTracks(props.tracks, i)
+}
+
+function toggleFav() {
+  if (slug.value) toggleFavorite(slug.value)
+}
+
+function closePops() {
+  openPop.value = ''
+}
+
+function doCreatePl() {
+  const name = newPlName.value.trim()
+  if (!name) return
+  const id = createPlaylist(name)
+  newPlName.value = ''
+  if (slug.value) addToPlaylist(id, slug.value)
+  openPop.value = 'playlist'
+}
+
+function toggleInPl(pid) {
+  if (!slug.value) return
+  if (isInPlaylist(pid, slug.value)) removeFromPlaylist(pid, slug.value)
+  else addToPlaylist(pid, slug.value)
+}
 </script>
 
 <template>
   <div class="music-player" :class="{ hasLyrics: lyrics.length }">
+    <div v-if="openPop" class="mp-backdrop" @click="closePops"></div>
+
     <div class="mp-body">
       <div class="mp-left">
-        <div class="mp-cover-lg" :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}">
-          <span v-if="!track || !track.cover" class="mp-cover-glyph">♫</span>
+        <div class="mp-disc" :class="{ spin: playing }">
+          <div
+            class="mp-disc-cover"
+            :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}"
+          >
+            <span v-if="!track || !track.cover" class="mp-disc-glyph">♫</span>
+          </div>
+          <span class="mp-disc-spindle"></span>
         </div>
         <div class="mp-info">
-          <p class="mp-title">{{ track ? track.title : '—' }}</p>
+          <div class="mp-info-row">
+            <p class="mp-title">{{ track ? track.title : '—' }}</p>
+            <button class="mp-fav" :class="{ on: isFav }" :title="isFav ? '取消收藏' : '收藏'" @click="toggleFav">
+              {{ isFav ? '♥' : '♡' }}
+            </button>
+            <div class="mp-pop-root">
+              <button class="mp-btn mp-addlist" title="加入歌单" @click="openPop = openPop === 'playlist' ? '' : 'playlist'">
+                + 歌单
+              </button>
+              <div v-if="openPop === 'playlist'" class="mp-pop">
+                <p class="mp-pop-title">加入歌单</p>
+                <div v-for="pl in prefs.playlists" :key="pl.id" class="mp-pop-row">
+                  <button class="mp-pop-check" @click="toggleInPl(pl.id)">
+                    <span :class="{ on: slug && isInPlaylist(pl.id, slug) }">{{ slug && isInPlaylist(pl.id, slug) ? '☑' : '☐' }}</span>
+                    {{ pl.name }}
+                  </button>
+                </div>
+                <div v-if="!prefs.playlists.length" class="mp-pop-empty">还没有歌单</div>
+                <div class="mp-pop-new">
+                  <input v-model="newPlName" class="input" placeholder="新建歌单" @keydown.enter="doCreatePl" />
+                  <button class="btn btn-sm" @click="doCreatePl">新建</button>
+                </div>
+              </div>
+            </div>
+          </div>
           <p class="mp-artist">{{ track && track.artist ? track.artist : '未知歌手' }}</p>
         </div>
         <canvas ref="canvasRef" class="mp-spectrum"></canvas>
@@ -333,8 +400,8 @@ onBeforeUnmount(() => {
             v-for="(t, i) in tracks"
             :key="t.slug"
             class="mp-item"
-            :class="{ on: i === index }"
-            @click="playIndex(i)"
+            :class="{ on: isCurrent(t.slug) }"
+            @click="playAt(i)"
           >
             <span class="mp-item-title">{{ t.title }}</span>
             <span class="mp-item-artist">{{ t.artist }}</span>
@@ -354,10 +421,42 @@ onBeforeUnmount(() => {
         <button class="mp-btn mp-play" @click="togglePlay">{{ playing ? '❚❚' : '▶' }}</button>
         <button class="mp-btn" title="下一首" @click="next(true)">⏭</button>
       </div>
-      <div class="mp-right">
+      <div class="mp-tools">
         <div class="mp-vol" @click="setVol($event)">
           <div class="mp-vol-fill" :style="{ width: `${volume * 100}%` }"></div>
         </div>
+
+        <div class="mp-pop-root">
+          <button class="mp-btn mp-rate" title="倍速" @click="openPop = openPop === 'rate' ? '' : 'rate'">
+            {{ music.rate }}×
+          </button>
+          <div v-if="openPop === 'rate'" class="mp-pop">
+            <button
+              v-for="r in RATE_STEPS"
+              :key="r"
+              class="mp-pop-opt"
+              :class="{ on: music.rate === r }"
+              @click="setRate(r)"
+            >{{ r }}×</button>
+          </div>
+        </div>
+
+        <div class="mp-pop-root">
+          <button class="mp-btn mp-sleep" :class="{ on: music.sleepEnd }" title="睡眠定时" @click="openPop = openPop === 'sleep' ? '' : 'sleep'">
+            {{ music.sleepEnd ? `⏱${fmtRemain(sleepRemain)}` : '⏱' }}
+          </button>
+          <div v-if="openPop === 'sleep'" class="mp-pop">
+            <button class="mp-pop-opt" :class="{ on: !music.sleepEnd }" @click="cancelSleep; closePops()">关闭</button>
+            <button
+              v-for="m in [15, 30, 60, 90]"
+              :key="m"
+              class="mp-pop-opt"
+              :class="{ on: music.sleepMin === m }"
+              @click="startSleep(m); closePops()"
+            >{{ m }}分钟</button>
+          </div>
+        </div>
+
         <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="cycleMode">
           {{ mode === 'random' ? '⇄' : mode === 'loop' ? '⟳' : mode === 'list' ? '⇅' : '→' }}
         </button>

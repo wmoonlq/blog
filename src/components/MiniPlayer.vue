@@ -1,10 +1,13 @@
 <script setup>
 import { computed } from 'vue'
 import { music, currentTrack, progress, togglePlay, next, prev, playIndex } from '../stores/music'
+import { isFavorite, toggleFavorite } from '../stores/musicPrefs'
 
 const emit = defineEmits(['goto-music'])
 
 const visible = computed(() => music.tracks.length > 0)
+const slug = computed(() => (currentTrack.value ? currentTrack.value.slug : ''))
+const isFav = computed(() => slug.value && isFavorite(slug.value))
 
 function fmt(s) {
   if (!isFinite(s) || s < 0) s = 0
@@ -27,6 +30,7 @@ function fmt(s) {
           <p class="mini-artist">{{ currentTrack && currentTrack.artist ? currentTrack.artist : '未知歌手' }} · {{ fmt(music.current) }} / {{ fmt(music.duration) }}</p>
         </div>
         <div class="mini-ctrl">
+          <button class="mini-btn mini-fav" :class="{ on: isFav }" title="收藏" @click="slug && toggleFavorite(slug)">{{ isFav ? '♥' : '♡' }}</button>
           <button class="mini-btn" title="上一首" @click="prev">⏮</button>
           <button class="mini-btn mini-play" title="播放/暂停" @click="togglePlay">{{ music.playing ? '❚❚' : '▶' }}</button>
           <button class="mini-btn" title="下一首" @click="next(true)">⏭</button>

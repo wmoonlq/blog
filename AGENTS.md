@@ -61,7 +61,7 @@
 | 文章 | `src/posts/*.md` | — | frontmatter: title/date/tags |
 | 随笔 | `src/notes/*.md` | — | frontmatter: date（title 可选） |
 | 视频 | `src/videos/*.md` | `public/videos/` | frontmatter: title/date/source/category/collections/poster/type |
-| 音乐 | `src/music/*.md` | `public/music/` | frontmatter: title/date/source/artist/cover/lyrics/type |
+| 音乐 | `src/music/*.md` | `public/music/` | frontmatter: title/date/source/artist/cover/lyrics/yrc/type |
 | 背景图 | — | `public/bg/` | 由特效页上传，无元数据 |
 
 - 媒体上传/删除统一走 `src/utils/githubFiles.js`：密码门禁 `123456`（前端校验防刷），Token 复用 localStorage `notes-token`（fine-grained PAT）
@@ -71,3 +71,4 @@
 - **B 站限制**：download.yml 已内置「调 `x/frontend/finger/spi` 拿真实 buvid3/buvid4 写 cookies」逻辑，但 GitHub runner（美国机房 IP）对 B 站内容接口仍 412 → 浏览器「从链接下载」对 B 站不可用，只能本机下载（直连 + 真实 cookie + ffmpeg，见 devlog 踩坑 5）；本机 ffmpeg 可用 `pip install imageio-ffmpeg` 取静态二进制
 - 歌词：LRC 解析在 `src/utils/lrc.js`（支持 `[offset:]` 标签）；播放器内置歌词校准（±0.1/0.5s，按歌曲记忆）；官方歌词源可用网易云 API `music.163.com/api/song/lyric?id=`
 - 歌曲时长可用 FLAC STREAMINFO 解析（sample rate 20bit @ offset 10，total samples 36bit @ offset 14）
+- 音乐个性化（收藏/歌单/最近播放）走 `src/stores/musicPrefs.js` localStorage（`music-favorites`/`music-playlists`/`music-history`），不写仓库；播放器 QQ 风格：旋转唱片、倍速（music-prefs 持久化）、Media Session、睡眠定时（music-sleep-end）、播放即建队（`playTracks`，视图切换不打断播放）；音乐上传（MediaManager kind=music）支持封面/歌词 .lrc/逐字 .yrc 可选文件，写入 md `cover`/`lyrics`/`yrc`
