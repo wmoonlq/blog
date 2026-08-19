@@ -411,7 +411,7 @@ const server = http.createServer((req, res) => {
     return
   }
   if (req.url === '/api/status') {
-    sendStatus(res, 200, 'application/json', JSON.stringify({ ok: true, port: PORT, ws: true }))
+    sendStatus(res, 200, 'application/json', JSON.stringify({ ok: true, port: PORT, ws: true, version: 2 }))
     return
   }
   if (req.url === '/api/exec' && req.method === 'POST') {

@@ -25,6 +25,7 @@ const BRIDGE_WS = `ws://${BRIDGE_HOST}:${BRIDGE_PORT}/ws`
 const BRIDGE_TOKEN_KEY = 'bridge-token'
 const bridgeToken = ref(localStorage.getItem(BRIDGE_TOKEN_KEY) || '')
 const bridgeOnline = ref(false) // HTTP 存活（状态点）
+const bridgeVersion = ref(0) // 桥接协议版本（0=不可达/未知，2=支持 WS）
 const bridgeConnected = ref(false) // WS 已连接
 const sessionId = ref('') // 持久 exec 会话 id
 const sessionShell = ref('')
@@ -69,8 +70,14 @@ async function pingBridge() {
     const t = setTimeout(() => ctrl.abort(), 1500)
     const res = await fetch(`${BRIDGE_URL}/api/status`, { signal: ctrl.signal })
     clearTimeout(t)
-    bridgeOnline.value = res.ok
-    return res.ok
+    if (!res.ok) {
+      bridgeOnline.value = false
+      return false
+    }
+    const data = await res.json().catch(() => ({}))
+    bridgeOnline.value = true
+    bridgeVersion.value = data.version || (data.ws ? 2 : 1)
+    return true
   } catch {
     bridgeOnline.value = false
     return false
@@ -193,12 +200,22 @@ async function connectBridge(token) {
   push(`正在连接本机 ${BRIDGE_WS} …`)
   const ok = await pingBridge()
   if (!ok) {
-    push('连接失败：桥接未启动或网络不通。', 'err')
-    push('  1. 本机先运行：npm run bridge（或 node local-bridge/bridge.js）', 'dim')
-    push('  2. 浏览器会放行 127.0.0.1 回环地址，GitHub Pages 部署后仍可用', 'dim')
+    push('无法访问本机桥接：', 'err')
+    push('  1) 本机是否已运行桥接？在博客仓库目录执行：', 'dim')
+    push('     npm run bridge    （或双击 local-bridge\\bridge.cmd）', 'dim')
+    push('     启动后终端应打印 [blog-bridge] 已启动 http://127.0.0.1:9876', 'dim')
+    push('  2) 若桥接已在运行仍连不上：浏览器可能拦截了对 127.0.0.1 的访问。', 'dim')
+    push('     换用本地方式打开博客再试：npm run dev → http://localhost:5173/#/cmd', 'dim')
     push('')
     return
   }
+  if (bridgeVersion.value < 2) {
+    push(`本机桥接版本过旧（v${bridgeVersion.value}），不支持 WebSocket。`, 'err')
+    push('  请重启桥接（先关旧窗口，再 npm run bridge），确保打印含 "(WS: /ws)"', 'dim')
+    push('')
+    return
+  }
+  push('HTTP 可达，正在建立 WebSocket…')
   try {
     const ws = new WebSocket(BRIDGE_WS)
     wsRef = ws
@@ -524,12 +541,15 @@ async function runCommand(cmd) {
     case 'status': {
       const ok = await pingBridge()
       if (!ok) {
-        push(`本机桥接离线：${BRIDGE_URL} 未响应。本机需先运行 npm run bridge`, 'err')
+        push(`本机桥接不可达：${BRIDGE_URL} 未响应。`, 'err')
+        push('  请先在本机运行：npm run bridge（或双击 local-bridge\\bridge.cmd）', 'dim')
+        push('  若桥接已在运行仍不可达，浏览器可能拦截了 127.0.0.1：用 npm run dev 本地打开博客', 'dim')
       } else {
-        push(`本机桥接在线：${BRIDGE_URL}`)
+        push(`本机桥接在线：${BRIDGE_URL}  (v${bridgeVersion.value})`)
         push(`  WebSocket：${bridgeConnected.value ? '已连接' : '未连接（connect <token>）'}`)
         push(`  持久会话：${sessionId.value ? sessionId.value + (sessionShell.value ? `（${sessionShell.value}）` : '') : '无'}`)
         push(`  交互会话：${liveSessions.size ? [...liveSessions.entries()].map(([id, c]) => `${id}:${c}`).join('、') : '无'}`)
+        if (bridgeVersion.value < 2) push('  ⚠ 旧版桥接，请重启（需含 "(WS: /ws)"）', 'err')
       }
       push('')
       break
