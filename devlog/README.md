@@ -9,6 +9,8 @@
 - [2026-08-17 时间线 403 根治与 CR 修复](#2026-08-17-时间线-403-根治与-cr-修复)
 - [2026-08-19 音乐封面与模糊背景](#2026-08-19-音乐封面与模糊背景)
 - [2026-08-19 博客命令行窗口](#2026-08-19-博客命令行窗口)
+- [2026-08-19 视频链接下载（yt-dlp + Actions）](#2026-08-19-视频链接下载yt-dlp--actions)
+- [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
 
 ---
 
@@ -290,5 +292,82 @@
 - 命令输出统一 `push(text, cls)` 入 `lines` 数组渲染，`cls` 控制 dim/accent/err 三类样式（全部走 tokens，无彩色图标）
 - 数据消费复用现有工具函数 `utils/posts|notes|music|videos.js`，播放复用全局音乐 store `playIndex`，与音乐页联动
 - 页面纯前端模拟 cmd 外观（`--font-mono` + `--pre-bg` 面板），随明暗主题自适应
+
+---
+
+## 2026-08-19 视频链接下载（yt-dlp + Actions）
+
+### 背景
+
+用户希望把开源项目 [yt-dlp](https://github.com/RanT711/yt-dlp)（命令行视频下载器）集成进视频模块。纯静态站浏览器跑不了 Python CLI，但现有「前端写仓库 → push 触发 Actions → 自动发布」链路已成熟，故让 Actions 在云端执行 yt-dlp。
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| 视频页「下载视频」入口 | `VideoDownloader.vue`：粘贴链接（必填）+ 标题/分类/合集（可选），密码 + Token 门禁（与上传一致） |
+| 队列文件 | 提交后把 `{url,title,category,collection,date,requestedAt,status:'queued'}` 写入 `downloads/queue.json`（Contents API，已有文件需带 sha 覆盖） |
+| 下载 workflow | 新增 `.github/workflows/download.yml`，`on: push: paths:['downloads/queue.json']` 触发；安装 yt-dlp + yt-dlp-ejs → Python 脚本读队列 → 抓取 720p（`bv*[height<=720]+ba`）≤300M，合并/转封装 mp4 → 写 `public/videos/` + 生成 `src/videos/*.md`（含自动下载的 poster 封面）→ 提交推送 |
+| 部署防抖 | `deploy.yml` 加 `paths-ignore: ['downloads/**']`，写队列文件不再触发空构建；下载 workflow 提交只 `git add public/videos src/videos`，不碰 `downloads/`，无自触发死循环 |
+
+### 踩坑记录
+
+#### 1. workflow 提交会自触发
+
+- **现象**：下载完提交如果也改动 `downloads/`，`paths: ['downloads/queue.json']` 会再次触发同一 workflow，形成死循环
+- **解决**：提交阶段只 `git add public/videos src/videos`，queue.json 原样保留；下一次下载是覆盖写（走 Contents API），天然再触发一次。workflow 开头无队列/空 url 直接退出
+
+#### 2. 覆盖已有队列文件需 sha
+
+- **现象**：Contents API 对已存在文件 PUT 不带 sha 报 422
+- **解决**：`githubFiles.js` 的 `uploadFile` 增加可选 `sha` 参数，组件先 `getFileSha` 再 PUT
+
+#### 3. PowerShell 直接调 `npm` 不生效
+
+- **现象**：PowerShell 里裸 `npm run build` 返回空、dist 无更新
+- **解决**：Windows 下用 `cmd /c "npm run build"` 执行（npm 是 .cmd 批处理）
+
+### 架构要点
+
+- 数据流：前端 `VideoDownloader` → `downloads/queue.json`（密码+Token）→ push → `download.yml`（yt-dlp）→ 提交 `public/videos` + `src/videos` → push → `deploy.yml` 自动发布
+- yt-dlp 用 PyPI 上游（RanT711 fork 与上游同源），`npm i -g yt-dlp-ejs` 保证 YouTube 完整支持（失败不阻断其他站点）
+- 下载失败仅 workflow 标红，不污染仓库；队列文件仍在，人工重试可重新 push 或 workflow_dispatch 手动触发
+- 待办：若 PAT 补 `workflow` 权限，可改为前端直接 `workflow_dispatch` 触发，省去 push 一程
+
+---
+
+## 2026-08-19 随笔回收站
+
+### 背景
+
+随笔此前只能编辑/永久删除（MarkdownEditor 高级选项里的删除是直接 DELETE，不可恢复）。用户要求删除先进回收站，回收站里可还原或彻底删除。
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| 回收站目录 | 新增 `src/notes-trash/`（含 `.gitkeep`），glob 在站点外；删除 = `moveFile` 把 `src/notes/<slug>.md` 移入，还原 = 移回，彻底删除 = DELETE |
+| 工具函数 | `githubFiles.js` 新增 `getFileContent` + `moveFile`（读内容 → PUT 新路径 → DELETE 旧路径）；`notes.js` 新增 `getTrashedNotes()`；`localMedia.js` 新增 `getLocalTrashed/addLocalTrashed/removeLocalTrashed` 本地记录 |
+| 随笔页 UI | Hero 加「回收站」（带数量角标）与「管理」按钮；管理模式下每篇随笔卡片出现「删除」；回收站列出已删条目，提供「还原」与「彻底删除」，均走密码 + Token 门禁（复用 `.delete-bar`） |
+| 即时生效 | 删除/还原/清除后写本地 trash 记录，列表立即更新；构建后由 `src/notes-trash/` glob 接管持久化 |
+
+### 踩坑记录
+
+#### 1. 平行未提交改动共存
+
+- **现象**：工作区有未提交的视频下载 WIP（`VideoDownloader.vue`、`download.yml`、`deploy.yml`、`VideosView.vue`、devlog 视频节），与回收站改动同文件（`githubFiles.js` 的 `uploadFile sha` 参数、AGENTS.md 视频条、devlog）
+- **原因**：视频 feature 的 workflow 文件受 PAT 无 `workflow` 权限约束无法 push，故滞留工作区
+- **解决**：本次只 `git add` 回收站相关文件提交；视频 helper/docs 改动随同文件带入（`uploadFile` 加 `sha` 向后兼容），视频功能文件与 workflow 留给后续有权限时再提交
+
+#### 2. 本地 trash 记录保证删除即时消失
+
+- **现象**：删除后文件在 GitHub 已移出 `src/notes`，但本机构建产物仍是旧 glob，随笔仍会显示
+- **解决**：`addLocalTrashed` 写 localStorage，`notes` computed 过滤掉本地已删 slug；构建后该文件进入 `src/notes-trash` glob，天然不再出现
+
+### 架构要点
+
+- 移动采用「先 PUT 新路径、再 DELETE 旧路径」，失败时最多留副本、绝不丢数据
+- 回收站数据源 = 本地 trash 记录 ∪ `getTrashedNotes()` glob，按 slug 去重，按日期倒序
+- 还原后本地记录即删，重新构建后随笔恢复上线；密码门禁 `123456` 与上传/删除一致
 
 ---

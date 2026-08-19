@@ -21,6 +21,7 @@
 
 - 文章：`src/posts/*.md`，frontmatter 含 title/date/tags，英文短横线命名
 - 随笔：`src/notes/*.md`，frontmatter 仅需 date（title 可选）
+- 随笔回收站：删除时 `moveFile` 把 `src/notes/<slug>.md` 移至 `src/notes-trash/`（glob 排除在站点外），还原移回，彻底删除直接 DELETE；`utils/notes.js` 的 `getTrashedNotes()` 与 `utils/localMedia.js` 的本地 trash 记录供回收站 UI 读取
 - 修改已有文件直接编辑，不新建副本
 - 禁止修改 `vite.config.js`、`scripts/`、`src/generated/` 构建相关文件
 
@@ -57,5 +58,6 @@
 
 - 媒体上传/删除统一走 `src/utils/githubFiles.js`：密码门禁 `123456`（前端校验防刷），Token 复用 localStorage `notes-token`（fine-grained PAT）
 - 上传后立即显示：`src/utils/localMedia.js` 本地记录待发布条目（带「待发布」角标），构建完成按 slug 去重自动转正式
+- 视频支持「从链接下载」：`src/components/VideoDownloader.vue` 把链接写入 `downloads/queue.json` → push 触发 `.github/workflows/download.yml`（yt-dlp 抓取 720p≤300M 到 `public/videos/` + 生成元数据 md + 自动提交）→ 触发现有部署上线；deploy.yml 已 `paths-ignore: ['downloads/**']` 避免队列文件触发空构建
 - 歌词：LRC 解析在 `src/utils/lrc.js`（支持 `[offset:]` 标签）；播放器内置歌词校准（±0.1/0.5s，按歌曲记忆）；官方歌词源可用网易云 API `music.163.com/api/song/lyric?id=`
 - 歌曲时长可用 FLAC STREAMINFO 解析（sample rate 20bit @ offset 10，total samples 36bit @ offset 14）

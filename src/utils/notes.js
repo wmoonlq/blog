@@ -19,3 +19,23 @@ export function getAllNotes() {
     })
     .sort((a, b) => (a.date < b.date ? 1 : -1))
 }
+
+const trashModules = import.meta.glob('../notes-trash/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true
+})
+
+export function getTrashedNotes() {
+  return Object.entries(trashModules)
+    .map(([path, raw]) => {
+      const { data, content } = parseFrontmatter(raw)
+      return {
+        slug: path.split('/').pop().replace(/\.md$/, ''),
+        title: data.title || '',
+        date: data.date || '',
+        content
+      }
+    })
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+}

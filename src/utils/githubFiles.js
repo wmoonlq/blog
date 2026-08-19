@@ -126,14 +126,16 @@ export async function getFileSha(path) {
   }
 }
 
-export async function uploadFile({ path, content, message, token }) {
+export async function uploadFile({ path, content, message, token, sha }) {
+  const body = {
+    message,
+    content
+  }
+  if (sha) body.sha = sha
   const res = await fetch(`${API}/repos/${REPO}/contents/${path}`, {
     method: 'PUT',
     headers: headers(token),
-    body: JSON.stringify({
-      message,
-      content
-    })
+    body: JSON.stringify(body)
   })
   if (!res.ok) {
     let detail = ''
@@ -164,4 +166,34 @@ export async function deleteFile(path, message, token) {
     }
     throw new Error(`删除失败（${res.status}）${detail ? `：${detail}` : ''}`)
   }
+}
+
+export async function getFileContent(path, token) {
+  const res = await fetch(`${API}/repos/${REPO}/contents/${path}`, {
+    headers: headers(token)
+  })
+  if (!res.ok) throw new Error(`读取失败（${res.status}）`)
+  return res.json()
+}
+
+export async function moveFile({ fromPath, toPath, message, token }) {
+  const data = await getFileContent(fromPath, token)
+  const putRes = await fetch(`${API}/repos/${REPO}/contents/${toPath}`, {
+    method: 'PUT',
+    headers: headers(token),
+    body: JSON.stringify({
+      message: `docs: move ${fromPath} -> ${toPath}`,
+      content: data.content
+    })
+  })
+  if (!putRes.ok) {
+    let detail = ''
+    try {
+      detail = (await putRes.json()).message || ''
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`移动失败（${putRes.status}）${detail ? `：${detail}` : ''}`)
+  }
+  await deleteFile(fromPath, message, token)
 }

@@ -1032,6 +1032,81 @@ img {
   justify-content: space-between;
 }
 
+.note-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-del {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.hero-btn-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* 随笔回收站 */
+.trash-section {
+  border: var(--border-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+
+.trash-section .month-label {
+  margin-bottom: 8px;
+}
+
+.trash-count {
+  margin-left: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.trash-list {
+  list-style: none;
+}
+
+.trash-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.trash-row:last-child {
+  border-bottom: none;
+}
+
+.trash-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.trash-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 .note-title {
   font-family: var(--font-serif);
   font-weight: 600;

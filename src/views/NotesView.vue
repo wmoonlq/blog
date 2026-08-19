@@ -1,12 +1,49 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getAllNotes } from '../utils/notes'
+import { getAllNotes, getTrashedNotes } from '../utils/notes'
 import { renderMarkdown } from '../utils/markdown'
 import { relativeTime, monthLabel } from '../utils/format'
+import { checkPassword, getToken, deleteFile, moveFile } from '../utils/githubFiles'
+import {
+  getLocalTrashed,
+  addLocalTrashed,
+  removeLocalTrashed
+} from '../utils/localMedia'
 
 const route = useRoute()
-const notes = computed(() => getAllNotes())
+
+const trashedLocal = ref(getLocalTrashed())
+
+const notes = computed(() => {
+  const localTrashed = new Set(trashedLocal.value.map((t) => t.slug))
+  return getAllNotes().filter((n) => !localTrashed.has(n.slug))
+})
+
+const trashedNotes = computed(() => {
+  const seen = new Map()
+  for (const t of trashedLocal.value) {
+    seen.set(t.slug, {
+      slug: t.slug,
+      title: t.title || '',
+      date: t.date || '',
+      content: '',
+      trashed: true
+    })
+  }
+  for (const t of getTrashedNotes()) {
+    const cur = seen.get(t.slug)
+    if (cur && cur.title) continue
+    seen.set(t.slug, {
+      slug: t.slug,
+      title: t.title || '',
+      date: t.date || '',
+      content: t.content || '',
+      trashed: true
+    })
+  }
+  return [...seen.values()].sort((a, b) => (a.date < b.date ? 1 : -1))
+})
 
 const expanded = ref(new Set())
 const noteEls = ref([])
@@ -54,6 +91,114 @@ watch(
   },
   { immediate: true }
 )
+
+/* ---- 管理 / 回收站 ---- */
+
+const showManage = ref(false)
+const showTrash = ref(false)
+const action = ref(null) // { type: 'trash' | 'restore' | 'purge', slug, title }
+const actPwd = ref('')
+const actMsg = ref('')
+const busy = ref(false)
+
+function startDelete(note) {
+  action.value = { type: 'trash', slug: note.slug, title: note.title || note.date || note.slug }
+  actPwd.value = ''
+  actMsg.value = ''
+}
+
+function startRestore(t) {
+  action.value = { type: 'restore', slug: t.slug, title: t.title || t.slug }
+  actPwd.value = ''
+  actMsg.value = ''
+}
+
+function startPurge(t) {
+  action.value = { type: 'purge', slug: t.slug, title: t.title || t.slug }
+  actPwd.value = ''
+  actMsg.value = ''
+}
+
+function cancelAction() {
+  action.value = null
+  actMsg.value = ''
+}
+
+const actionTitle = computed(() => {
+  const a = action.value
+  if (!a) return ''
+  return a.type === 'trash'
+    ? `将「${a.title}」移入回收站？`
+    : a.type === 'restore'
+      ? `从回收站还原「${a.title}」？`
+      : `彻底删除「${a.title}」？`
+})
+
+const actionSub = computed(() => {
+  const a = action.value
+  if (!a) return ''
+  return a.type === 'trash'
+    ? '文件将移至 src/notes-trash/，可从回收站还原'
+    : a.type === 'restore'
+      ? '文件将移回 src/notes/，随笔重新上线'
+      : '文件将从仓库永久移除，不可恢复'
+})
+
+async function confirmAction() {
+  if (!action.value) return
+  actMsg.value = ''
+  if (!checkPassword(actPwd.value)) {
+    actMsg.value = '操作密码不正确'
+    return
+  }
+  const token = getToken()
+  if (!token) {
+    actMsg.value = '需要 GitHub Token（与随笔编辑器共用，可在编辑器高级选项填写）'
+    return
+  }
+  const { type, slug, title } = action.value
+  if (type === 'purge' && !window.confirm(`确认彻底删除「${title}」？此操作不可恢复。`)) return
+  if (type === 'trash' && !window.confirm(`确认将「${title}」移入回收站？`)) return
+
+  busy.value = true
+  try {
+    if (type === 'trash') {
+      await moveFile({
+        fromPath: `src/notes/${slug}.md`,
+        toPath: `src/notes-trash/${slug}.md`,
+        message: `docs: trash note ${slug}`,
+        token
+      })
+      addLocalTrashed({ slug, title, date: '' })
+      trashedLocal.value = getLocalTrashed()
+    } else {
+      const fromPath = `src/notes-trash/${slug}.md`
+      if (type === 'purge') {
+        await deleteFile(fromPath, `chore: purge note ${slug}`, token)
+      } else {
+        await moveFile({
+          fromPath,
+          toPath: `src/notes/${slug}.md`,
+          message: `docs: restore note ${slug}`,
+          token
+        })
+      }
+      removeLocalTrashed(slug)
+      trashedLocal.value = getLocalTrashed()
+    }
+    action.value = null
+    actMsg.value =
+      type === 'trash'
+        ? '已移入回收站，等待自动构建发布后生效'
+        : type === 'restore'
+          ? '已还原，等待自动构建发布后生效'
+          : '已彻底删除，等待自动构建发布后生效'
+  } catch (e) {
+    actMsg.value = e.message
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
@@ -61,8 +206,48 @@ watch(
     <header class="hero">
       <h1 class="hero-title">随笔</h1>
       <p class="hero-sub">随手记下的碎片 · {{ notes.length }} 篇</p>
-      <router-link class="btn hero-btn" :to="{ name: 'notes-editor' }">写随笔</router-link>
+      <div class="hero-actions">
+        <router-link class="btn hero-btn" :to="{ name: 'notes-editor' }">写随笔</router-link>
+        <button class="btn hero-btn" :class="{ 'btn-on': showTrash }" @click="showTrash = !showTrash">
+          {{ showTrash ? '收起回收站' : '回收站' }}<span v-if="trashedNotes.length" class="hero-btn-count">{{ trashedNotes.length }}</span>
+        </button>
+        <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
+          {{ showManage ? '退出管理' : '管理' }}
+        </button>
+      </div>
     </header>
+
+    <div v-if="action" class="delete-bar">
+      <div class="delete-bar-main">
+        <p class="delete-bar-title">{{ actionTitle }}</p>
+        <p class="delete-bar-sub">{{ actionSub }}</p>
+      </div>
+      <input
+        v-model="actPwd"
+        class="input delete-pwd"
+        type="password"
+        placeholder="操作密码"
+        @keydown.enter="confirmAction"
+      />
+      <button class="btn btn-sm" @click="actPwd = '123456'">一键填充</button>
+      <button class="btn btn-sm btn-danger" :disabled="busy" @click="confirmAction">
+        {{ busy ? '处理中…' : '确认' }}
+      </button>
+      <button class="btn btn-sm" @click="cancelAction">取消</button>
+      <p v-if="actMsg" class="editor-msg">{{ actMsg }}</p>
+    </div>
+
+    <div v-if="showTrash && trashedNotes.length" class="trash-section">
+      <h2 class="month-label">回收站 <span class="trash-count">{{ trashedNotes.length }}</span></h2>
+      <ul class="trash-list">
+        <li v-for="t in trashedNotes" :key="t.slug" class="trash-row">
+          <span class="trash-name">{{ t.title || t.slug }}</span>
+          <span class="trash-date">{{ t.date || '—' }}</span>
+          <button class="btn btn-sm" @click="startRestore(t)">还原</button>
+          <button class="btn btn-sm btn-danger" @click="startPurge(t)">彻底删除</button>
+        </li>
+      </ul>
+    </div>
 
     <div v-if="notes.length">
       <section v-for="[month, list] in byMonth" :key="month" class="month-group">
@@ -76,10 +261,13 @@ watch(
             >
               <div class="note-head">
                 <time class="note-date">{{ note.date }}<span class="note-relative"> · {{ relativeTime(note.date) }}</span></time>
-                <router-link
-                  class="edit-link"
-                  :to="{ name: 'notes-editor', query: { file: `${note.slug}.md` } }"
-                >编辑</router-link>
+                <span class="note-actions">
+                  <router-link
+                    class="edit-link"
+                    :to="{ name: 'notes-editor', query: { file: `${note.slug}.md` } }"
+                  >编辑</router-link>
+                  <button v-if="showManage" class="btn btn-sm btn-danger note-del" @click="startDelete(note)">删除</button>
+                </span>
               </div>
               <h2 v-if="note.title" class="note-title">{{ note.title }}</h2>
               <div class="prose note-content" :class="{ clamp: !isExpanded(note.slug) }" v-html="render(note.content)"></div>
