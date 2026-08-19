@@ -11,6 +11,7 @@
 - [2026-08-19 博客命令行窗口](#2026-08-19-博客命令行窗口)
 - [2026-08-19 视频链接下载（yt-dlp + Actions）](#2026-08-19-视频链接下载yt-dlp--actions)
 - [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
+- [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
 
 ---
 
@@ -375,5 +376,44 @@
 - 移动采用「先 PUT 新路径、再 DELETE 旧路径」，失败时最多留副本、绝不丢数据
 - 回收站数据源 = 本地 trash 记录 ∪ `getTrashedNotes()` glob，按 slug 去重，按日期倒序
 - 还原后本地记录即删，重新构建后随笔恢复上线；密码门禁 `123456` 与上传/删除一致
+
+---
+
+## 2026-08-19 命令行桥接本机 shell
+
+### 背景
+
+用户希望博客「命令行」页能关联本机真实命令行。纯静态站浏览器无法直接执行本机 shell，故加一个本地 HTTP 桥接服务：博客页发命令 → 本机执行 → 流式回显。
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| 本地桥接服务 | 新增 `local-bridge/bridge.js`（Node 零依赖）：仅绑 `127.0.0.1:9876`，`GET /api/status` 存活检测，`POST /api/exec` 用 `spawn(cmd, {shell:true})` 执行并分块流式回显，`[退出码] n` 结尾，超时 120s；Token 门禁，`BRIDGE_PORT/BRIDGE_TOKEN/BRIDGE_TIMEOUT` 可配；npm script `bridge` |
+| 命令行页接入 | CmdView 新增 `bridge`/`connect`/`disconnect`/`local`/`cwd` 命令 + `!` 前缀快捷执行；窗口标题栏加「本机在线/离线」状态点（10s 轮询）；Token 存 localStorage |
+| 流式渲染 | fetch 读 `res.body.getReader()` 流式分块渲染输出，`[退出码]/[超时]/[错误]` 行降级为 dim 样式 |
+
+### 踩坑记录
+
+#### 1. 为何不用 WebSocket 而用 fetch 流
+
+- **现象/原因**：交互式 shell 需要 stdin，POST+流式无法喂 stdin；但命令行页的场景是「执行命令看输出」，不需要交互输入，且 fetch 流零依赖、跨域 CORS 简单
+- **取舍**：交互式 REPL（python/node -i）暂不支持；`cd` 不跨命令持久（每次独立子进程），用 `cwd <绝对路径>` 解决
+
+#### 2. https 页访问本机 http 回环
+
+- **现象**：部署在 GitHub Pages（https），fetch `http://127.0.0.1:9876` 是否算混合内容被拦？
+- **解决**：Chrome/Edge/Firefox 对回环地址（127.0.0.1/localhost）有混合内容豁免，https 页可直连本机 http 服务；绑定固定 `127.0.0.1` 而非 `localhost` 最稳
+
+#### 3. PowerShell 传 curl 的 JSON 转义坑（测试期）
+
+- **现象**：`& curl.exe -d '{\"token\":...}'` 在 PS 单引号里 `\"` 原样透传，服务端 JSON 解析失败 → 误报「Token 无效」
+- **解决**：测试改用 `Invoke-RestMethod -Body (ConvertTo-Json)`；真实前端 fetch 不受影响
+
+### 架构要点
+
+- 数据流：CmdView `local`/`!` → POST `/api/exec` → 本机 `spawn(cmd, shell)` 执行 → stdout/stderr 分块写响应 → 前端流式渲染
+- 安全：仅绑 127.0.0.1 + Token 校验；每次执行独立子进程，天然隔离
+- 待办：若要交互式 REPL 或持久会话，需升级为 WebSocket（带 stdin 通道）或双向管道
 
 ---

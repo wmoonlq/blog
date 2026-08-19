@@ -34,6 +34,12 @@
 
 - 网页端随笔编辑器：https://wmoonlq.github.io/blog/#/notes/editor（首次需在高级选项中粘贴一次 Token，存于浏览器 localStorage，之后免粘贴）
 
+## 本地命令行桥接
+
+- 博客「命令行」页（`/cmd`）可连接本机真实 shell：本机先 `npm run bridge`（即 `node local-bridge/bridge.js`）启动一个仅监听 `127.0.0.1:9876` 的 HTTP 服务，页面 `connect <token>`（默认 `blog-local`，启动时打印）后，`local <命令>` 或 `!<命令>` 在本机执行并流式回显
+- 桥接协议：`GET /api/status` 存活检测（无鉴权）；`POST /api/exec` `{token, cmd, cwd?}` 分块流式输出，`[退出码] n` 结尾，超时默认 120s（`BRIDGE_PORT`/`BRIDGE_TOKEN`/`BRIDGE_TIMEOUT` 可配）
+- 安全边界：仅绑 127.0.0.1 + Token 校验；浏览器对 https 页访问本机回环地址有放行（混合内容豁免），故 GitHub Pages 部署后仍可用；每次 `local` 是独立子进程，`cd` 不跨命令持久（可 `cwd <绝对路径>` 设置基础目录）
+
 ## 开发日记
 
 - 每轮开发结束，将功能迭代、踩坑记录同步到 `devlog/README.md`（Markdown，按日期分节）

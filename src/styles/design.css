@@ -3609,6 +3609,32 @@ img {
   color: var(--text-secondary);
 }
 
+.cmd-bridge {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.cmd-bridge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--divider);
+  transition: background var(--transition);
+}
+
+.cmd-bridge.on .cmd-bridge-dot {
+  background: var(--accent);
+}
+
+.cmd-bridge.on {
+  color: var(--text);
+}
+
 .cmd-body {
   background: var(--pre-bg);
   padding: 16px 18px;
