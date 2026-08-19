@@ -39,7 +39,9 @@ const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  // 防御性：公网(GitHub Pages) → 本地回环的 Private Network Access 声明，防止未来 Chrome 收紧时被拦
+  'Access-Control-Allow-Private-Network': 'true'
 }
 
 /* ===================== 极简 WebSocket 服务端（RFC 6455） ===================== */
