@@ -334,6 +334,14 @@
 - **现象**：download.yml 提交视频后，deploy.yml 未运行——GitHub 平台行为：GITHUB_TOKEN 触发的事件（push 等）不会创建新的 workflow run，防递归
 - **解决**：workflow_dispatch 是例外。deploy.yml 增 `workflow_dispatch`，download.yml 提权 `actions: write`，push 成功后 `gh workflow run deploy.yml --ref main` 显式调度（gh 随 runner 预装，自动用 GITHUB_TOKEN 认证）
 
+#### 5. B 站 412：假 buvid + 机房 IP 双重封锁
+
+- **现象**：B 站链接 yt-dlp 报 `HTTP Error 412: Precondition Failed`（Downloading webpage 阶段），GitHub runner 与本机均复现
+- **排查**：`--impersonate chrome`、显式 Chrome UA、Referer 头、手写 `uuid+infoc` 的假 buvid 全部无效；`api.bilibili.com/x/frontend/finger/spi` 无需 cookie 可通，`x/web-interface/view` 需真实 buvid 且**带 Referer 反而 412**
+- **根因**：① yt-dlp 默认给 B 站生成假 `buvid3`（`uuid4()+infoc`，bilibili.py:1920-1921），被 B 站 WAF 拒绝；② 本机整机走代理出口 AWS 东京、GitHub runner 美国机房 IP，对 B 站内容接口（网页/view API）硬 412
+- **解决（本机）**：先用 urllib 调 spi 拿真实 `buvid3/buvid4` 写 Netscape cookies.txt，yt-dlp 加 `--cookies` + 直连 `--proxy ""`（PowerShell 传空串会被吞，用 `python -c`/脚本传参）即通；ffmpeg 用 `pip install imageio-ffmpeg`（自带静态二进制，`--ffmpeg-location` 指定）
+- **局限**：GitHub runner（美国 IP）即使带真实 cookie 仍 412 → **浏览器「下载视频」功能对 B 站不可用**；workflow 已内置 spi→cookies 逻辑，对 YouTube 等站点正常。B 站只能本机/国内代理下载。若需 runner 支持 B 站，须给 Actions 配国内代理节点（加密 secret）
+
 ### 架构要点
 
 - 数据流：前端 `VideoDownloader` → `downloads/queue.json`（密码+Token）→ push → `download.yml`（yt-dlp）→ 提交 `public/videos` + `src/videos` → `gh workflow run deploy.yml` 显式调度部署
