@@ -12,6 +12,7 @@
 - [2026-08-19 视频链接下载（yt-dlp + Actions）](#2026-08-19-视频链接下载yt-dlp--actions)
 - [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
 - [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
+- [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
 
 ---
 
@@ -423,5 +424,58 @@
 - 数据流：CmdView `local`/`!` → POST `/api/exec` → 本机 `spawn(cmd, shell)` 执行 → stdout/stderr 分块写响应 → 前端流式渲染
 - 安全：仅绑 127.0.0.1 + Token 校验；每次执行独立子进程，天然隔离
 - 待办：若要交互式 REPL 或持久会话，需升级为 WebSocket（带 stdin 通道）或双向管道
+
+---
+
+## 2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）
+
+### 背景
+
+上一版桥接是 HTTP POST + fetch 流：单向、无 stdin、每次独立子进程（`cd` 不持久），跑不了交互程序。用户提示参考 DeepSeek Harness 的做法，遂按其设计升级为 WebSocket 双向 + 常驻 shell 会话。
+
+### 参考 DSH 的要点
+
+| DSH 机制 | 我们落地 |
+|---|---|
+| WebSocket 双向传输 | `ws://127.0.0.1:9876/ws`，极简 RFC 6455 服务端手写（握手+掩码帧+分片+ping/pong/close），零依赖 |
+| 常驻持久 shell（tool-bash-persistent） | `cmd.exe /Q`（或 `BRIDGE_SHELL`）常驻，`cd`/env 跨命令保留 |
+| nonce 标记包装截取输出+退出码 | `echo __DSH_B_nonce__; <cmd>; echo __DSH_E_nonce%errorlevel%`，缓冲到 end 标记，正则取退出码 |
+| 超时/异常自复位 | 命令超时或 `exit` 杀 shell 时自动重开干净会话，返回 partial 输出并标 `reset:true` |
+| 交互程序 | 独立 `interactive` 会话：输出实时流 + `stdin` 喂输入（REPL/ssh） |
+| 提示符污染处理 | cmd/pwsh 管道输入会带 `E:\path>` 提示符前缀，解析层用 `\r\n\r\n[^\r\n>]*>` 正则剥离 |
+
+### 功能迭代清单
+
+| 改动 | 说明 |
+|---|---|
+| bridge.js 重写 | 保留 HTTP `status`/`exec` 兼容；新增 `/ws` WebSocket + `open/exec/interactive/stdin/reset/close/ping` 消息 |
+| 会话模型 | 每个连接独立 exec 会话（标记包装、有界缓冲、超时自复位）+ 可多个 interactive 会话 |
+| CmdView 升级 | `connect` 自动开持久会话；`local`/`!` 走 WS exec（流式 + 结果替换渲染）；新增 `interactive`/`raw`/`live`/`session` 命令；状态点区分「已连接/待连接/离线」；挂载时若存有 Token 自动重连 |
+
+### 踩坑记录
+
+#### 1. cmd/pwsh 管道输入带提示符+回显
+
+- **现象**：`spawn('cmd.exe')` 后写 stdin，输出里每条命令都带 `E:\path>` 前缀且回显命令文字，标记截取的 output 被污染（`\nC:\...>echo hello world\nhello world\n`）
+- **尝试**：`cmd /Q` 只去掉命令回显文字，仍留 `PROMPT>` 前缀；PowerShell `-NoLogo` 同样回显
+- **解决**：DSH 用 node-pty（真终端）规避；纯 Node 下在解析层剥离提示符——`/Q` 启动 + `seg.replace(/\r\n\r\n[^\r\n>]*>/g,'\r\n')` 再滤空行，得到干净输出
+- **代价**：无法获得真 PTY 的彩色/光标控制；交互程序走独立 live 会话（原始流直出，天然保留提示符观感）
+
+#### 2. `exit` 杀常驻 shell
+
+- **现象**：用户执行 `exit`，cmd 实例退出，pending 命令永远等不到 end 标记 → 超时
+- **解决**：child `close` 时若在 pending，立即以 close 的 exitCode 结算结果并 `reset:true` 重开干净 shell；后续 exec 自动在新 shell 上跑（DSH 同款「reset 后从工作区重来」语义）
+
+#### 3. 测试客户端没挂第二个连接的 handler
+
+- **现象**：bad-token 测试超时
+- **解决**：`ws2.onmessage` 未赋值，auth-fail 消息没人接；非服务端问题，补 handler 即可
+
+### 架构要点
+
+- 一次连接 = 一个持久 exec 会话 + N 个 interactive 会话；连接关闭自动清理
+- 输出路径：执行期流式 `output`（前端 dim 渲染显示进度）→ 结束时按起点 splice 替换为干净 `result.output` + `[退出码]`
+- 退出码非 0 显示为 err 红；`chcp 65001` 防中文乱码；`BRIDGE_SHELL=powershell` 可换 shell（标记包装会切到 `$?` 分支）
+- 待办：真 PTY（node-pty/ConPTY）以获得完整终端能力；token 固定写死可改动态配对
 
 ---

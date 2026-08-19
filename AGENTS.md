@@ -36,9 +36,11 @@
 
 ## 本地命令行桥接
 
-- 博客「命令行」页（`/cmd`）可连接本机真实 shell：本机先 `npm run bridge`（即 `node local-bridge/bridge.js`）启动一个仅监听 `127.0.0.1:9876` 的 HTTP 服务，页面 `connect <token>`（默认 `blog-local`，启动时打印）后，`local <命令>` 或 `!<命令>` 在本机执行并流式回显
-- 桥接协议：`GET /api/status` 存活检测（无鉴权）；`POST /api/exec` `{token, cmd, cwd?}` 分块流式输出，`[退出码] n` 结尾，超时默认 120s（`BRIDGE_PORT`/`BRIDGE_TOKEN`/`BRIDGE_TIMEOUT` 可配）
-- 安全边界：仅绑 127.0.0.1 + Token 校验；浏览器对 https 页访问本机回环地址有放行（混合内容豁免），故 GitHub Pages 部署后仍可用；每次 `local` 是独立子进程，`cd` 不跨命令持久（可 `cwd <绝对路径>` 设置基础目录）
+- 博客「命令行」页（`/cmd`）可连接本机真实 shell：本机先 `npm run bridge`（即 `node local-bridge/bridge.js`）启动仅监听 `127.0.0.1:9876` 的 HTTP+WebSocket 服务，页面 `connect <token>`（默认 `blog-local`，启动时打印）后自动打开**持久 shell 会话**
+- 架构参考 DeepSeek Harness：**WebSocket 双向**（`ws://127.0.0.1:9876/ws`）+ **常驻 shell**（`cmd.exe /Q` 或 `BRIDGE_SHELL` 指定）+ **nonce 标记包装**截取干净输出与退出码
+- 协议：`{type:'auth',token}` → `{type:'open'}` 开持久会话 → `{type:'exec',id,cmd}`（流式 `output` + 最终 `result{output,exitCode}`）；`{type:'interactive',id,cmd}` + `{type:'stdin',id,data}` 供交互程序（python/ssh）；`{type:'reset'|'close',id}`；HTTP 保留 `GET /api/status` 与一次性 `POST /api/exec`（兼容旧版）
+- 特点：`cd`/环境变量跨命令保留；命令超时（默认 120s，`BRIDGE_TIMEOUT` 可配）或 `exit` 杀 shell 时自动复位重开；cmd/pwsh 的提示符前缀在解析层剥离；`chcp 65001` 切 UTF-8 防中文乱码
+- 安全边界：仅绑 127.0.0.1 + Token 校验；浏览器对 https 页访问本机回环地址有放行（混合内容豁免），GitHub Pages 部署后仍可用
 
 ## 开发日记
 

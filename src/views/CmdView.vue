@@ -21,11 +21,18 @@ const PROMPT = 'C:\\blog>'
 const BRIDGE_HOST = '127.0.0.1'
 const BRIDGE_PORT = 9876
 const BRIDGE_URL = `http://${BRIDGE_HOST}:${BRIDGE_PORT}`
+const BRIDGE_WS = `ws://${BRIDGE_HOST}:${BRIDGE_PORT}/ws`
 const BRIDGE_TOKEN_KEY = 'bridge-token'
 const bridgeToken = ref(localStorage.getItem(BRIDGE_TOKEN_KEY) || '')
-const bridgeOnline = ref(false)
+const bridgeOnline = ref(false) // HTTP 存活（状态点）
+const bridgeConnected = ref(false) // WS 已连接
+const sessionId = ref('') // 持久 exec 会话 id
+const sessionShell = ref('')
+const liveSessions = new Map() // live 会话 id -> cmd
 const bridgeCwd = ref('')
+let wsRef = null
 let bridgeTimer = null
+let execStartLine = -1 // 当前 exec 输出起点（用于结果替换）
 
 const BANNER = [
   '博客命令行 v1.0 — wmoonlq@blog',
@@ -54,7 +61,7 @@ function focusInput() {
   inputEl.value && inputEl.value.focus()
 }
 
-/* ============ 本机桥接 ============ */
+/* ============ 本机桥接（WebSocket + 持久会话） ============ */
 
 async function pingBridge() {
   try {
@@ -74,6 +81,101 @@ function saveBridgeToken() {
   localStorage.setItem(BRIDGE_TOKEN_KEY, bridgeToken.value)
 }
 
+function wsSend(msg) {
+  if (wsRef && wsRef.readyState === WebSocket.OPEN) wsRef.send(JSON.stringify(msg))
+}
+
+function handleWsMessage(msg) {
+  switch (msg.type) {
+    case 'auth-ok':
+      bridgeConnected.value = true
+      push(`已连接本机（${msg.shell}，端口 ${msg.port}），正在打开持久会话…`, 'ok')
+      wsSend({ type: 'open' })
+      break
+    case 'auth-fail':
+      push(`连接失败：${msg.message}`, 'err')
+      closeWs()
+      break
+    case 'session':
+      if (msg.interactive) {
+        liveSessions.set(msg.id, msg.cmd || '(shell)')
+        push(`交互会话已启动（${msg.id}）：${msg.cmd || '(shell)'}`)
+        push('  用 raw <文本> 输入，live close 结束', 'dim')
+      } else if (msg.reset) {
+        push('会话已复位（上一个命令异常退出），环境已重置。', 'dim')
+      } else {
+        sessionId.value = msg.id
+        sessionShell.value = msg.shell || ''
+        push(`持久会话就绪（${msg.shell}）。local <命令> 执行，cd 跨命令保留。`, 'ok')
+      }
+      push('')
+      break
+    case 'output': {
+      if (msg.id === sessionId.value && execStartLine >= 0) {
+        const text = stripPrompt(msg.text)
+        if (text) push(text, 'dim')
+        scrollDown()
+      } else if (liveSessions.has(msg.id)) {
+        const text = msg.text.replace(/\r\n/g, '\n').replace(/\r/g, '').replace(/\n$/, '')
+        if (text) push(text)
+        scrollDown()
+      }
+      break
+    }
+    case 'result': {
+      if (execStartLine >= 0 && lines.value.length > execStartLine) {
+        lines.value.splice(execStartLine, lines.value.length - execStartLine)
+      }
+      execStartLine = -1
+      if (msg.error) push(`错误：${msg.error}`, 'err')
+      if (msg.output) pushMulti(msg.output.split('\n'))
+      if (msg.reset) push('（命令未正常返回，会话已自动复位）', 'dim')
+      push(msg.exitCode === null ? '[退出码] 已终止' : `[退出码] ${msg.exitCode}`, msg.exitCode ? 'err' : 'dim')
+      push('')
+      break
+    }
+    case 'closed':
+      if (liveSessions.delete(msg.id)) push(`交互会话已结束（${msg.id}）`, 'dim')
+      else if (msg.id === sessionId.value) {
+        sessionId.value = ''
+        push('持久会话已关闭。', 'dim')
+      }
+      push('')
+      break
+    case 'error':
+      if (msg.id === sessionId.value) execStartLine = -1
+      push(`本机错误：${msg.message}`, 'err')
+      push('')
+      break
+    case 'pong':
+      break
+    default:
+      break
+  }
+}
+
+function stripPrompt(text) {
+  return text
+    .replace(/\r\n\r\n[^\r\n>]*>/g, '\n')
+    .replace(/\r\n[^\r\n>]*>/g, '\n')
+    .replace(/\r/g, '')
+}
+
+function closeWs() {
+  bridgeConnected.value = false
+  sessionId.value = ''
+  liveSessions.clear()
+  execStartLine = -1
+  if (wsRef) {
+    try {
+      wsRef.close()
+    } catch {
+      /* ignore */
+    }
+    wsRef = null
+  }
+}
+
 async function connectBridge(token) {
   const t = (token || '').trim()
   if (!t) {
@@ -81,24 +183,57 @@ async function connectBridge(token) {
     push('')
     return
   }
+  if (bridgeConnected.value) {
+    push('已在连接中。可先 disconnect。', 'err')
+    push('')
+    return
+  }
   bridgeToken.value = t
   saveBridgeToken()
-  push(`正在连接本机桥接 ${BRIDGE_URL} …`)
-  if (await pingBridge()) {
-    push('桥接在线，Token 已保存。输入 local <命令> 执行（如 local dir）', 'ok')
-  } else {
+  push(`正在连接本机 ${BRIDGE_WS} …`)
+  const ok = await pingBridge()
+  if (!ok) {
     push('连接失败：桥接未启动或网络不通。', 'err')
-    push('  1. 本机先运行：node local-bridge/bridge.js', 'dim')
-    push('  2. 允许浏览器访问本机回环地址（浏览器会放行 127.0.0.1）', 'dim')
+    push('  1. 本机先运行：npm run bridge（或 node local-bridge/bridge.js）', 'dim')
+    push('  2. 浏览器会放行 127.0.0.1 回环地址，GitHub Pages 部署后仍可用', 'dim')
+    push('')
+    return
+  }
+  try {
+    const ws = new WebSocket(BRIDGE_WS)
+    wsRef = ws
+    ws.onopen = () => wsSend({ type: 'auth', token: bridgeToken.value })
+    ws.onmessage = (e) => {
+      try {
+        handleWsMessage(JSON.parse(e.data))
+      } catch {
+        /* ignore */
+      }
+    }
+    ws.onclose = () => {
+      if (bridgeConnected.value) push('本机连接已断开。', 'dim')
+      closeWs()
+      push('')
+    }
+    ws.onerror = () => {
+      /* 错误由 onclose 统一处理 */
+    }
+  } catch (e) {
+    push(`WebSocket 连接失败：${e.message}`, 'err')
     push('')
   }
 }
 
 function disconnectBridge() {
-  bridgeToken.value = ''
-  bridgeOnline.value = false
-  localStorage.removeItem(BRIDGE_TOKEN_KEY)
-  push('已断开本机桥接。')
+  if (!bridgeConnected.value) {
+    bridgeToken.value = ''
+    bridgeOnline.value = false
+    localStorage.removeItem(BRIDGE_TOKEN_KEY)
+    push('已清除本机 Token。')
+  } else {
+    push('已断开本机桥接。')
+    closeWs()
+  }
   push('')
 }
 
@@ -108,46 +243,77 @@ async function runLocal(cmd) {
     push('')
     return
   }
-  push(`[本机@${BRIDGE_URL}] ${cmd}`, 'dim')
-  push(`[工作目录] ${bridgeCwd.value || '(默认用户主目录)'}`, 'dim')
-  try {
-    const ctrl = new AbortController()
-    const t = setTimeout(() => ctrl.abort(), 130000)
-    const res = await fetch(`${BRIDGE_URL}/api/exec`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: bridgeToken.value, cmd, cwd: bridgeCwd.value }),
-      signal: ctrl.signal
-    })
-    if (!res.ok) {
-      clearTimeout(t)
-      throw new Error(`桥接错误（${res.status}）：${await res.text()}`)
-    }
-    if (!res.body) {
-      clearTimeout(t)
-      throw new Error('桥接未返回数据流')
-    }
-    const reader = res.body.getReader()
-    const dec = new TextDecoder()
-    let buf = ''
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buf += dec.decode(value, { stream: true })
-      const parts = buf.split('\n')
-      buf = parts.pop()
-      for (const p of parts) {
-        const text = p.replace(/\r$/, '')
-        if (/^\[退出码\]|^\[超时\]|^\[错误\]/.test(text)) push(text, 'dim')
-        else push(text)
-      }
-    }
-    if (buf) push(buf.replace(/\r$/, ''), /^\[退出码\]|^\[超时\]|^\[错误\]/.test(buf) ? 'dim' : '')
-    clearTimeout(t)
-  } catch (e) {
-    push(`执行失败：${e.name === 'AbortError' ? '连接超时，请确认本机桥接已启动' : e.message}`, 'err')
+  if (!bridgeConnected.value) {
+    push('桥接未连接。先输入 connect <token>', 'err')
+    push('')
+    return
   }
-  push('')
+  if (!sessionId.value) {
+    push('持久会话未就绪，等待自动打开…', 'dim')
+    wsSend({ type: 'open' })
+    push('')
+    return
+  }
+  push(`[本机] $ ${cmd}`, 'accent')
+  execStartLine = lines.value.length
+  wsSend({ type: 'exec', id: sessionId.value, cmd })
+}
+
+function setCwd(p) {
+  if (!bridgeConnected.value) {
+    push('未连接本机。', 'err')
+    push('')
+    return
+  }
+  if (sessionId.value) {
+    execStartLine = lines.value.length
+    wsSend({ type: 'exec', id: sessionId.value, cmd: IS_WIN_CMD() ? `cd /d ${p}` : `cd ${p}` })
+  } else {
+    wsSend({ type: 'open' })
+    bridgeCwd.value = p
+    push('会话未就绪，已记录目录，待会话打开后生效', 'dim')
+    push('')
+  }
+}
+
+function IS_WIN_CMD() {
+  return !sessionShell.value || /cmd/i.test(sessionShell.value)
+}
+
+function startInteractive(cmd) {
+  if (!bridgeConnected.value) {
+    push('未连接本机。', 'err')
+    push('')
+    return
+  }
+  wsSend({ type: 'interactive', cmd })
+}
+
+function sendStdin(data) {
+  if (!bridgeConnected.value) {
+    push('未连接本机。', 'err')
+    push('')
+    return
+  }
+  if (liveSessions.size) {
+    const id = liveSessions.keys().next().value
+    wsSend({ type: 'stdin', id, data: data.endsWith('\n') ? data : `${data}\n` })
+  } else if (sessionId.value) {
+    wsSend({ type: 'stdin', id: sessionId.value, data: `${data}\r\n` })
+  } else {
+    push('没有可输入的活动会话。', 'err')
+    push('')
+  }
+}
+
+function closeLive() {
+  if (!liveSessions.size) {
+    push('没有活动的交互会话。', 'err')
+    push('')
+    return
+  }
+  const id = liveSessions.keys().next().value
+  wsSend({ type: 'close', id })
 }
 
 const sections = [
@@ -179,12 +345,16 @@ const HELP = [
   '  clear / cls     清屏',
   '  exit            试图离开',
   '',
-  '本机桥接（需先在本机启动 node local-bridge/bridge.js）：',
-  '  bridge          检查桥接状态',
-  '  connect <token> 连接本机（Token 由桥接启动时显示）',
+  '本机桥接（需先在本机启动 npm run bridge）：',
+  '  bridge          检查桥接状态（HTTP + WebSocket + 会话）',
+  '  connect <token> 连接本机并自动打开持久 shell',
   '  disconnect      断开本机桥接',
-  '  local <命令>    在本机执行命令（也可用 ! 前缀，如 !dir）',
-  '  cwd [路径]      查看或设置本机执行的工作目录',
+  '  local <命令>    在本机持久会话执行（也可用 ! 前缀，如 !dir）',
+  '  cwd [路径]      查看/切换会话工作目录（cd 跨命令保留）',
+  '  interactive <c> 启动交互程序（python/node/ssh 等）',
+  '  raw <文本>      向活动会话输入一行',
+  '  live            查看交互会话；live close 结束',
+  '  session         查看持久会话；session reset/close 管理',
   ''
 ]
 
@@ -353,8 +523,14 @@ async function runCommand(cmd) {
     case 'bridge':
     case 'status': {
       const ok = await pingBridge()
-      if (ok) push(`本机桥接在线：${BRIDGE_URL}${bridgeToken.value ? '（已保存 Token）' : '（未保存 Token，输入 connect <token>）'}`)
-      else push(`本机桥接离线：${BRIDGE_URL} 未响应。本机需先运行 node local-bridge/bridge.js`, 'err')
+      if (!ok) {
+        push(`本机桥接离线：${BRIDGE_URL} 未响应。本机需先运行 npm run bridge`, 'err')
+      } else {
+        push(`本机桥接在线：${BRIDGE_URL}`)
+        push(`  WebSocket：${bridgeConnected.value ? '已连接' : '未连接（connect <token>）'}`)
+        push(`  持久会话：${sessionId.value ? sessionId.value + (sessionShell.value ? `（${sessionShell.value}）` : '') : '无'}`)
+        push(`  交互会话：${liveSessions.size ? [...liveSessions.entries()].map(([id, c]) => `${id}:${c}`).join('、') : '无'}`)
+      }
       push('')
       break
     }
@@ -374,13 +550,67 @@ async function runCommand(cmd) {
       break
     case 'cwd':
       if (arg) {
-        bridgeCwd.value = arg.trim()
-        push(`工作目录已设为：${bridgeCwd.value}`)
+        setCwd(arg.trim())
+      } else if (bridgeConnected.value) {
+        execStartLine = lines.value.length
+        wsSend({ type: 'exec', id: sessionId.value, cmd: 'cd' })
       } else {
-        push(`当前工作目录：${bridgeCwd.value || '(默认：本机用户主目录)'}`)
-        push('设置方法: cwd <绝对路径>')
+        push('未连接本机。', 'err')
+        push('')
+      }
+      break
+    case 'interactive':
+      if (!arg) {
+        push('用法: interactive <命令>，如 interactive python / interactive node', 'err')
+        push('')
+      } else {
+        startInteractive(arg)
+      }
+      break
+    case 'raw':
+      if (!arg) {
+        push('用法: raw <文本>，向活动会话输入一行（配合 interactive）', 'err')
+        push('')
+      } else {
+        sendStdin(arg)
+      }
+      break
+    case 'live':
+      if (!liveSessions.size) {
+        push('没有活动的交互会话。interactive <命令> 开启。', 'err')
+      } else {
+        push(`活动交互会话：${[...liveSessions.entries()].map(([id, c]) => `${id}(${c})`).join('、')}`)
+        push('  raw <文本> 输入 · live close 结束')
       }
       push('')
+      break
+    case 'session':
+      if (args[0] === 'reset') {
+        if (sessionId.value) {
+          wsSend({ type: 'reset', id: sessionId.value })
+          push('已请求会话复位。', 'dim')
+        } else {
+          push('没有持久会话。', 'err')
+        }
+        push('')
+      } else if (args[0] === 'close') {
+        if (sessionId.value) {
+          wsSend({ type: 'close', id: sessionId.value })
+          sessionId.value = ''
+          push('已关闭持久会话。', 'dim')
+        } else {
+          push('没有持久会话。', 'err')
+        }
+        push('')
+      } else {
+        if (sessionId.value) {
+          push(`持久会话：${sessionId.value}（${sessionShell.value || '?'}）`)
+          push('  session reset 复位 · session close 关闭', 'dim')
+        } else {
+          push('没有持久会话。connect <token> 后自动打开。', 'err')
+        }
+        push('')
+      }
       break
     default:
       if (raw.startsWith('!')) {
@@ -424,13 +654,17 @@ function onKeydown(e) {
 onMounted(() => {
   pushMulti(BANNER, 'dim')
   scrollDown()
-  if (bridgeToken.value) pingBridge()
+  if (bridgeToken.value) {
+    pingBridge()
+    connectBridge(bridgeToken.value)
+  }
   bridgeTimer = setInterval(pingBridge, 10000)
 })
 
 onBeforeUnmount(() => {
   if (bridgeTimer) clearInterval(bridgeTimer)
   bridgeTimer = null
+  closeWs()
 })
 </script>
 
@@ -447,8 +681,8 @@ onBeforeUnmount(() => {
         <span class="cmd-dot"></span>
         <span class="cmd-dot"></span>
         <span class="cmd-title">cmd — 博客命令行</span>
-        <span class="cmd-bridge" :class="{ on: bridgeOnline }" :title="bridgeOnline ? '本机桥接在线' : '本机桥接离线'">
-          <span class="cmd-bridge-dot"></span>{{ bridgeOnline ? '本机在线' : '本机离线' }}
+        <span class="cmd-bridge" :class="{ on: bridgeConnected || bridgeOnline }" :title="(bridgeConnected ? 'WebSocket 已连接' : bridgeOnline ? '桥接在线，未连接' : '本机桥接离线')">
+          <span class="cmd-bridge-dot"></span>{{ bridgeConnected ? '本机在线' : bridgeOnline ? '桥接待连接' : '本机离线' }}
         </span>
       </div>
       <div ref="bodyEl" class="cmd-body">
