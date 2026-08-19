@@ -29,7 +29,7 @@ jobs:
           deno-version: v2.x
 
       - name: Install yt-dlp
-        run: pip install -q yt-dlp
+        run: pip install -q "yt-dlp[default,curl-cffi]"
 
       - name: Download and commit
         run: |
@@ -71,8 +71,11 @@ jobs:
           date = str(q.get('date') or time.strftime('%Y-%m-%d')).strip()
           base = f'public/videos/{slug}'
 
-          cmd = [
-              'yt-dlp', '--no-playlist', '--no-warnings',
+          common = ['yt-dlp', '--no-playlist', '--no-warnings', '--impersonate', 'chrome']
+          if 'bilibili.com' in url:
+              common += ['--add-header', 'Referer:https://www.bilibili.com/']
+
+          cmd = common + [
               '-f', 'bv*[height<=720]+ba/b[height<=720]',
               '--merge-output-format', 'mp4',
               '--remux-video', 'mp4',
@@ -96,13 +99,13 @@ jobs:
           media_name = os.path.basename(media_path)
 
           poster = ''
-          subprocess.run([
-              'yt-dlp', '--no-playlist', '--no-warnings',
+          thumb_cmd = common + [
               '--skip-download',
               '--write-thumbnail', '--convert-thumbnails', 'jpg',
               '-o', f'{base}-poster.%(ext)s',
               url,
-          ], text=True)
+          ]
+          subprocess.run(thumb_cmd, text=True)
           for p in sorted(glob.glob(f'{base}-poster.*')):
               if p.lower().endswith(('.jpg', '.jpeg', '.png')):
                   poster = f'/blog/videos/{os.path.basename(p)}'
