@@ -30,6 +30,14 @@
 锁定的 Design Tokens 与排版规则见 `src/styles/design.css` 及 README：
 `--bg:#FBF9F6; --text:#1A1816; --accent:#B68D73` 等；衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变无彩色图标。
 
+## 共享骨架组件（2026-08-23 起）
+
+- `src/components/PageHero.vue`：统一页面头部（title/sub/stats/actions 插槽），新页面一律用它
+- `src/components/GroupLabel.vue`：统一分组标题（label + count + countUnit），替代手写 year/month/day 标题
+- `src/components/EmptyState.vue`：统一空状态（text/sub/操作插槽），禁止再写内联 `hero-sub` + padding 空态
+- `src/components/DeleteBar.vue`：统一密码确认条（`v-model:pwd` + confirm/cancel + busy 防并发），删除/危险操作必用
+- 页面骨架约定：`PageHero → 筛选/工具区 → GroupLabel 分组 → EmptyState 兜底`；改动样式优先复用既有 tokens 类，不新增重复类
+
 ## 编辑工具
 
 - 网页端随笔编辑器：https://wmoonlq.github.io/blog/#/notes/editor（首次需在高级选项中粘贴一次 Token，存于浏览器 localStorage，之后免粘贴）

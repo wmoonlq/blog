@@ -267,6 +267,14 @@ img {
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.post-tags span:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-strong);
 }
 
 /* ============================================================
@@ -1018,6 +1026,12 @@ img {
   box-shadow: var(--shadow-card);
   padding: 24px 28px;
   margin-bottom: 20px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .note-date {
@@ -1063,15 +1077,8 @@ img {
   margin-bottom: 24px;
 }
 
-.trash-section .month-label {
+.trash-section .group-label {
   margin-bottom: 8px;
-}
-
-.trash-count {
-  margin-left: 6px;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  color: var(--text-secondary);
 }
 
 .trash-list {
@@ -1131,6 +1138,10 @@ img {
 .hero-btn {
   display: inline-block;
   margin-top: 24px;
+}
+
+.hero-actions .hero-btn {
+  margin-top: 0;
 }
 
 .editor-card {
@@ -1663,7 +1674,8 @@ img {
   margin-bottom: 40px;
 }
 
-.year-label {
+/* 统一分组标题（年份/月份/日期/合集） */
+.group-label {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 15px;
@@ -1672,6 +1684,17 @@ img {
   margin-bottom: 16px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.group-label-count {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .post-card-top {
@@ -1701,22 +1724,28 @@ img {
   transform: translateX(0);
 }
 
-.home-empty {
+/* 统一空状态（组件 EmptyState） */
+.empty-state {
   text-align: center;
   padding: 80px 0;
 }
 
-.home-empty-text {
+.empty-state-text {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 20px;
   letter-spacing: 0.04em;
 }
 
-.home-empty-sub {
+.empty-state-sub {
   margin: 10px 0 24px;
   font-size: 14px;
   color: var(--text-secondary);
+}
+
+.empty-state-action {
+  display: flex;
+  justify-content: center;
 }
 
 /* ============================================================
@@ -1724,17 +1753,6 @@ img {
    ============================================================ */
 .month-group {
   margin-bottom: 40px;
-}
-
-.month-label {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.1em;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--divider);
 }
 
 .note-relative {
@@ -2365,6 +2383,17 @@ img {
   transform: translateY(-2px);
 }
 
+.tag-cloud-link.on {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tag-cloud-link.on .tag-cloud-count {
+  color: var(--on-accent);
+  opacity: 0.75;
+}
+
 .tag-cloud-count {
   font-size: 12px;
   color: var(--text-secondary);
@@ -2390,6 +2419,9 @@ img {
 }
 
 .tag-post-link {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 16px;
@@ -2400,6 +2432,19 @@ img {
 
 .tag-post-link:hover {
   color: var(--accent);
+}
+
+.tag-post-arrow {
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.tag-post-link:hover .tag-post-arrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .tag-post-date {
@@ -2451,34 +2496,6 @@ img {
   background: var(--accent);
 }
 
-.timeline-kind {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-}
-
-.timeline-link {
-  display: block;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  margin-top: 4px;
-  transition: color var(--transition);
-}
-
-.timeline-link:hover {
-  color: var(--accent);
-}
-
-.timeline-date {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ============================================================
    关于页
    ============================================================ */
@@ -2492,6 +2509,12 @@ img {
   box-shadow: var(--shadow-card);
   padding: 28px;
   margin-bottom: 20px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.about-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .about-title {
@@ -2531,6 +2554,13 @@ img {
   border-radius: var(--radius);
   padding: 20px 16px;
   text-align: center;
+  background: var(--hover-bg);
+  transition: transform var(--transition), border-color var(--transition);
+}
+
+.stat-cell:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
 }
 
 .stat-num {
@@ -3303,33 +3333,10 @@ img {
   margin-bottom: 36px;
 }
 
-.video-col-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--divider);
-}
-
-.video-col-title {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 16px;
-  letter-spacing: 0.08em;
-  color: var(--text);
-}
-
-.video-col-count {
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-}
-
 .video-col-desc {
   font-size: 13px;
   color: var(--text-secondary);
-  margin: -6px 0 14px;
+  margin: 4px 0 14px;
 }
 
 .video-col-empty {
@@ -5155,16 +5162,33 @@ img {
   margin-bottom: 28px;
 }
 
-.timeline-day {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 15px;
+/* 提交类型徽章 */
+.tl-kind {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   color: var(--text-secondary);
-  margin-bottom: 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--divider);
-  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--divider);
+}
+
+.tl-kind.feat {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.tl-kind.fix {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tl-kind.docs {
+  color: var(--accent);
+  background: var(--accent-strong);
+  border-color: transparent;
 }
 
 .timeline-item {
@@ -5193,12 +5217,6 @@ img {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.timeline-kind {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--accent);
 }
 
 .timeline-msg {
@@ -5231,18 +5249,4 @@ img {
   font-size: 12px;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
-}
-
-.timeline-empty {
-  display: flex;
-  justify-content: center;
-  padding: 96px 0;
-}
-
-.timeline-empty .hero-sub {
-  margin-top: 0;
-}
-
-.timeline-empty .btn-sm {
-  margin-left: 12px;
 }

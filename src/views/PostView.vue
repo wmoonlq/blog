@@ -5,6 +5,7 @@ import { getAllPosts, getPostBySlug } from '../utils/posts'
 import { renderMarkdown } from '../utils/markdown'
 import { readingTime } from '../utils/format'
 import { settings, setFontSize } from '../stores/settings'
+import EmptyState from '../components/EmptyState.vue'
 
 const route = useRoute()
 const post = computed(() => getPostBySlug(route.params.slug))
@@ -155,6 +156,6 @@ onBeforeUnmount(() => {
         <span v-else class="pager-item pager-empty"></span>
       </nav>
     </article>
-    <p v-else class="hero-sub" style="padding: 96px 0">文章不存在。</p>
+    <EmptyState v-else text="文章不存在" sub="链接可能有误，或文章已被移除" />
   </div>
 </template>

@@ -8,6 +8,10 @@ import MediaManager from '../components/MediaManager.vue'
 import VideoDownloader from '../components/VideoDownloader.vue'
 import { checkPassword, getToken, deleteFile } from '../utils/githubFiles'
 import { getLocalUploads, addLocalUpload, removeLocalUpload, isLocalUpload } from '../utils/localMedia'
+import PageHero from '../components/PageHero.vue'
+import GroupLabel from '../components/GroupLabel.vue'
+import EmptyState from '../components/EmptyState.vue'
+import DeleteBar from '../components/DeleteBar.vue'
 
 // 构建中的本地上传条目合并进列表，刷新后由真实数据替代
 const allVideos = computed(() => {
@@ -28,6 +32,7 @@ const showManage = ref(false)
 const deleting = ref(null) // 待删除的视频
 const deletePwd = ref('')
 const deleteMsg = ref('')
+const deleteBusy = ref(false)
 
 const categories = computed(() => {
   const counts = new Map()
@@ -98,6 +103,7 @@ async function confirmDelete() {
   }
   if (!window.confirm(`确认删除「${deleting.value.title}」？该操作会同时删除视频文件和元数据。`)) return
 
+  deleteBusy.value = true
   try {
     // 本地待发布条目：仅清除本地记录
     if (isLocalUpload(deleting.value.slug)) {
@@ -116,6 +122,8 @@ async function confirmDelete() {
     deleting.value = null
   } catch (e) {
     deleteMsg.value = e.message
+  } finally {
+    deleteBusy.value = false
   }
 }
 
@@ -126,10 +134,11 @@ function onUploaded(item) {
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">视频</h1>
-      <p class="hero-sub">影像与声音的合集 · {{ videos.length }} 个</p>
-      <div class="hero-actions">
+    <PageHero
+      title="视频"
+      :sub="`影像与声音的合集 · ${videos.length} 个`"
+    >
+      <template #actions>
         <button class="btn hero-btn" @click="showUpload = !showUpload">
           {{ showUpload ? '收起上传' : '上传视频' }}
         </button>
@@ -139,8 +148,8 @@ function onUploaded(item) {
         <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
           {{ showManage ? '退出管理' : '管理' }}
         </button>
-      </div>
-    </header>
+      </template>
+    </PageHero>
 
     <VideoDownloader
       v-if="showDownload"
@@ -158,24 +167,17 @@ function onUploaded(item) {
       @uploaded="onUploaded"
     />
 
-    <!-- 删除确认条 -->
-    <div v-if="deleting" class="delete-bar">
-      <div class="delete-bar-main">
-        <p class="delete-bar-title">删除「{{ deleting.title }}」</p>
-        <p class="delete-bar-sub">将删除视频文件与元数据，需要操作密码</p>
-      </div>
-      <input
-        v-model="deletePwd"
-        class="input delete-pwd"
-        type="password"
-        placeholder="操作密码"
-        @keydown.enter="confirmDelete"
-      />
-      <button class="btn btn-sm" @click="deletePwd = '123456'">一键填充</button>
-      <button class="btn btn-sm btn-danger" @click="confirmDelete">确认删除</button>
-      <button class="btn btn-sm" @click="cancelDelete">取消</button>
-      <p v-if="deleteMsg" class="editor-msg">{{ deleteMsg }}</p>
-    </div>
+    <DeleteBar
+      v-if="deleting"
+      v-model:pwd="deletePwd"
+      :title="`删除「${deleting.title}」`"
+      sub="将删除视频文件与元数据，需要操作密码"
+      :msg="deleteMsg"
+      :busy="deleteBusy"
+      confirm-label="确认删除"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
 
     <div v-if="categories.length" class="video-cats">
       <button
@@ -204,10 +206,7 @@ function onUploaded(item) {
 
     <template v-if="filtered.length || !activeCategory">
       <section v-for="g in collections" :key="g.col.id" class="video-col">
-        <div class="video-col-head">
-          <h2 class="video-col-title">{{ g.col.name }}</h2>
-          <span class="video-col-count">{{ g.videos.length }} 集</span>
-        </div>
+        <GroupLabel :label="g.col.name" :count="g.videos.length" count-unit="集" />
         <p v-if="g.col.description" class="video-col-desc">{{ g.col.description }}</p>
         <div v-if="g.videos.length" class="video-grid">
           <button
@@ -227,6 +226,6 @@ function onUploaded(item) {
         <p v-else class="video-col-empty">暂无视频</p>
       </section>
     </template>
-    <p v-else class="hero-sub" style="padding: 96px 0">该分类下暂无视频。</p>
+    <EmptyState v-else text="该分类下暂无视频" sub="换个分类看看，或上传新视频" />
   </div>
 </template>

@@ -6,6 +6,7 @@ import { getAllNotes } from '../utils/notes'
 import { getAllMusic } from '../utils/music'
 import { getAllVideos } from '../utils/videos'
 import { playIndex, currentTrack } from '../stores/music'
+import PageHero from '../components/PageHero.vue'
 
 const router = useRouter()
 
@@ -690,10 +691,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">命令行</h1>
-      <p class="hero-sub">一个假装是 cmd 的窗口 · 点击窗口后即可输入</p>
-    </header>
+    <PageHero
+      title="命令行"
+      sub="一个假装是 cmd 的窗口 · 点击窗口后即可输入"
+    />
 
     <div class="cmd-window" @click="focusInput">
       <div class="cmd-bar">

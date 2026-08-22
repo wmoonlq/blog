@@ -6,14 +6,15 @@ import RandomPick from '../components/RandomPick.vue'
 import CountdownTimer from '../components/CountdownTimer.vue'
 import PasswordGenerator from '../components/PasswordGenerator.vue'
 import StickyNotes from '../components/StickyNotes.vue'
+import PageHero from '../components/PageHero.vue'
 </script>
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">工作台</h1>
-      <p class="hero-sub">小工具集散地 · 摸鱼五分钟，效率两小时</p>
-    </header>
+    <PageHero
+      title="工作台"
+      sub="小工具集散地 · 摸鱼五分钟，效率两小时"
+    />
     <div class="tools-grid">
       <div class="tools-cell">
         <PomodoroTimer />

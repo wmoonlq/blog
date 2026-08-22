@@ -10,6 +10,10 @@ import {
   addLocalTrashed,
   removeLocalTrashed
 } from '../utils/localMedia'
+import PageHero from '../components/PageHero.vue'
+import GroupLabel from '../components/GroupLabel.vue'
+import EmptyState from '../components/EmptyState.vue'
+import DeleteBar from '../components/DeleteBar.vue'
 
 const route = useRoute()
 
@@ -203,10 +207,11 @@ async function confirmAction() {
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">随笔</h1>
-      <p class="hero-sub">随手记下的碎片 · {{ notes.length }} 篇</p>
-      <div class="hero-actions">
+    <PageHero
+      title="随笔"
+      :sub="`随手记下的碎片 · ${notes.length} 篇`"
+    >
+      <template #actions>
         <router-link class="btn hero-btn" :to="{ name: 'notes-editor' }">写随笔</router-link>
         <button class="btn hero-btn" :class="{ 'btn-on': showTrash }" @click="showTrash = !showTrash">
           {{ showTrash ? '收起回收站' : '回收站' }}<span v-if="trashedNotes.length" class="hero-btn-count">{{ trashedNotes.length }}</span>
@@ -214,31 +219,22 @@ async function confirmAction() {
         <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
           {{ showManage ? '退出管理' : '管理' }}
         </button>
-      </div>
-    </header>
+      </template>
+    </PageHero>
 
-    <div v-if="action" class="delete-bar">
-      <div class="delete-bar-main">
-        <p class="delete-bar-title">{{ actionTitle }}</p>
-        <p class="delete-bar-sub">{{ actionSub }}</p>
-      </div>
-      <input
-        v-model="actPwd"
-        class="input delete-pwd"
-        type="password"
-        placeholder="操作密码"
-        @keydown.enter="confirmAction"
-      />
-      <button class="btn btn-sm" @click="actPwd = '123456'">一键填充</button>
-      <button class="btn btn-sm btn-danger" :disabled="busy" @click="confirmAction">
-        {{ busy ? '处理中…' : '确认' }}
-      </button>
-      <button class="btn btn-sm" @click="cancelAction">取消</button>
-      <p v-if="actMsg" class="editor-msg">{{ actMsg }}</p>
-    </div>
+    <DeleteBar
+      v-if="action"
+      v-model:pwd="actPwd"
+      :title="actionTitle"
+      :sub="actionSub"
+      :msg="actMsg"
+      :busy="busy"
+      @confirm="confirmAction"
+      @cancel="cancelAction"
+    />
 
     <div v-if="showTrash && trashedNotes.length" class="trash-section">
-      <h2 class="month-label">回收站 <span class="trash-count">{{ trashedNotes.length }}</span></h2>
+      <GroupLabel label="回收站" :count="trashedNotes.length" />
       <ul class="trash-list">
         <li v-for="t in trashedNotes" :key="t.slug" class="trash-row">
           <span class="trash-name">{{ t.title || t.slug }}</span>
@@ -251,7 +247,7 @@ async function confirmAction() {
 
     <div v-if="notes.length">
       <section v-for="[month, list] in byMonth" :key="month" class="month-group">
-        <h2 class="month-label">{{ monthLabel(month) }}</h2>
+        <GroupLabel :label="monthLabel(month)" :count="list.length" />
         <ul class="note-list">
           <li v-for="note in list" :key="note.slug">
             <article
@@ -279,6 +275,6 @@ async function confirmAction() {
         </ul>
       </section>
     </div>
-    <p v-else class="hero-sub" style="padding: 96px 0">还没有随笔。</p>
+    <EmptyState v-else text="还没有随笔" sub="随手记下的碎片，都在这里归档" />
   </div>
 </template>

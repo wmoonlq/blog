@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { getAllPosts } from '../utils/posts'
 import { getAllNotes } from '../utils/notes'
 import { stripMarkdown } from '../utils/format'
+import PageHero from '../components/PageHero.vue'
 
 const posts = computed(() => getAllPosts())
 const notes = computed(() => getAllNotes())
@@ -35,10 +36,10 @@ const tech = ['Vite', 'Vue 3', 'Vue Router', 'Marked', 'GitHub Pages', 'Design T
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">关于本站</h1>
-      <p class="hero-sub">一个安静、克制、可写可读的个人站点</p>
-    </header>
+    <PageHero
+      title="关于本站"
+      sub="一个安静、克制、可写可读的个人站点"
+    />
     <div class="about-body">
       <section class="about-card">
         <h2 class="about-title">站点统计</h2>

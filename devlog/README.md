@@ -13,6 +13,7 @@
 - [2026-08-20 视频收藏夹式多集合 + 分区](#2026-08-20-视频收藏夹式多集合--分区)
 - [2026-08-20 音乐 QQ 音乐对标升级](#2026-08-20-音乐-qq-音乐对标升级)
 - [2026-08-23 音乐播放器酷狗风格改版](#2026-08-23-音乐播放器酷狗风格改版)
+- [2026-08-23 全站模块重构 — 统一骨架 · 模块提质](#2026-08-23-全站模块重构--统一骨架--模块提质)
 - [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
 - [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
 - [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
@@ -594,5 +595,56 @@
 - 布局层级：`.mp-head`（唱片/信息/控制/频谱）→ `.mp-progress-row`（时间+进度）→ `.mp-panel`（歌词/播放列表 Tab）→ `.mp-bar`（音量/倍速/睡眠）
 - 时长探测与播放引擎完全独立：探测用临时 `new Audio()`，绝不触碰全局 `audioEl`；`durations` 为组件内 reactive，切页重建
 - 待办：行内时长可持久化缓存（localStorage 按 slug）避免重复探测；列表排序/分组
+
+---
+
+## 2026-08-23 全站模块重构 — 统一骨架 · 模块提质
+
+### 背景
+
+用户要求「自由发挥，各个模块都要重构」。摸底 13 个视图后发现：每个页面手写 hero/分组标题/空状态/删除确认条，样式散落重复（year-label/month-label/timeline-day 三个近同类、home-empty/timeline-empty 等）。定调「统一骨架 + 模块提质」：抽共享组件消除重复，再对重点模块做实质升级。
+
+### 功能迭代清单
+
+| 模块 | 改动 |
+|---|---|
+| 新增 `PageHero.vue` | 统一页面头部：title/sub/stats（`{n,label}` 数组，渲染「N 标签」统计行）/actions 插槽，复用既有 hero/hero-stats/hero-actions/hero-btn 类 |
+| 新增 `GroupLabel.vue` | 统一分组标题（年份/月份/日期/视频合集），label + count + countUnit（如「3 集」），`.group-label` 替代 `.year-label/.month-label/.timeline-day` 三套重复样式 |
+| 新增 `EmptyState.vue` | 统一空状态（text/sub/默认插槽放操作按钮），替代各处内联 `hero-sub` + `padding: 96px 0` |
+| 新增 `DeleteBar.vue` | 统一密码确认条：`title/sub/msg/busy/confirm-label` + `v-model:pwd` + confirm/cancel 事件；Notes/Videos/Music 三处接入，内置「一键填充」 |
+| 首页 | PageHero 统计（文章/随笔/标签数）；文章卡片标签可点击 → 筛选（`@click.prevent.stop`，hover 变色）；空状态区分「无文章/无结果」 |
+| 随笔 | DeleteBar/GroupLabel（月份带计数）/EmptyState 接入；note-card hover 上浮 |
+| 标签页 | 标签云 active 实心态 + 计数变色；选中标签文章列表 hover 箭头浮现（`.tag-post-arrow`） |
+| 时间线 | commit 类型徽章 `.tl-kind`：`detectKind` 解析 feat:/fix:/docs:/chore:/ci:/refactor:/perf:/style: 前缀（大小写不敏感，无前缀回退 `other`），feat 描边 / fix 实心 / docs 淡底，仅用 accent 家族无彩色；加载/错误态换 EmptyState；顺手删除旧版重复的 timeline-kind/timeline-link 死 CSS |
+| 关于页 | PageHero 接入；about-card/stat-cell hover 上浮 + 边框 accent |
+| 工作台/命令行/两个编辑器 | hero 全部换 PageHero |
+| 音乐/视频 | PageHero + DeleteBar（补 `busy` 防并发删除）；视频合集标题换 GroupLabel（count-unit=集）；空分类态 EmptyState |
+| 文章页 | 「文章不存在」换 EmptyState |
+
+### 踩坑记录
+
+#### 1. 时间线旧 localStorage 缓存缺 `kind` 字段 → 白屏（reviewer 抓到）
+
+- **现象**：`loadCache()` 命中改动前写入的缓存（无 `kind`），模板 `c.kind[1]` 抛 `TypeError`，时间线整页渲染失败
+- **解决**：`commits.value = cached.map(toView)` —— toView 幂等，顺带补齐 kind
+
+#### 2. PageHero 按钮双重 margin
+
+- **现象**：首页「写文章」原本直接挂 hero 下（hero-btn margin-top 24px），套进 hero-actions 后双重 margin 下移约 24px
+- **解决**：`.hero-actions .hero-btn { margin-top: 0 }`，hero-actions 自身 24px 间距兜底
+
+#### 3. 博客-reviewer 审查捕获 4 项建议
+
+- DeleteBar 未传 busy（Notes 传了）→ 音乐/视频补 `deleteBusy` + finally 复位，防并发删除
+- detectKind 仅匹配小写 → 加 `i` 标志 + 键转小写
+- `.tag-post-title` 死类 → 删除
+- GroupLabel 计数无空格 → countUnit 前补空格（「3 集」）
+
+### 架构要点
+
+- 页面骨架统一：`PageHero → 筛选/工具区 → GroupLabel 分组 → EmptyState 兜底`，新增页面直接拼组件
+- 组件职责单一：PageHero（头部）/GroupLabel（分组标题）/EmptyState（空态）/DeleteBar（密码确认），全部只依赖既有 tokens
+- 死 CSS 清理：year-label/month-label/timeline-day/timeline-kind/timeline-link/timeline-empty/home-empty/trash-count/video-col-head/title/count 全部移除，grep 零残留
+- 待办：SearchModal 结果分组与热键可再升级；CmdView 输出高亮
 
 ---

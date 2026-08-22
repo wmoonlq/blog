@@ -3,7 +3,10 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getAllPosts } from '../utils/posts'
 import { getAllNotes } from '../utils/notes'
-import { readingTime, relativeTime } from '../utils/format'
+import { readingTime } from '../utils/format'
+import PageHero from '../components/PageHero.vue'
+import GroupLabel from '../components/GroupLabel.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const route = useRoute()
 const posts = computed(() => getAllPosts())
@@ -52,6 +55,12 @@ const byYear = computed(() => {
   return [...groups.entries()]
 })
 
+const heroStats = computed(() => [
+  { n: posts.value.length, label: '篇文章' },
+  { n: notes.value.length, label: '篇随笔' },
+  { n: allTags.value.length, label: '个标签' }
+])
+
 function toggleTag(tag) {
   activeTag.value = activeTag.value === tag ? '' : tag
 }
@@ -59,18 +68,15 @@ function toggleTag(tag) {
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">记录与思考</h1>
-      <p class="hero-sub">关于前端、设计与技术的随笔</p>
-      <div class="hero-stats">
-        <span>{{ posts.length }} 篇文章</span>
-        <span class="hero-stats-dot">·</span>
-        <span>{{ notes.length }} 篇随笔</span>
-        <span class="hero-stats-dot">·</span>
-        <span>{{ allTags.length }} 个标签</span>
-      </div>
-      <router-link class="btn hero-btn" :to="{ name: 'posts-editor' }">写文章</router-link>
-    </header>
+    <PageHero
+      title="记录与思考"
+      sub="关于前端、设计与技术的随笔"
+      :stats="heroStats"
+    >
+      <template #actions>
+        <router-link class="btn hero-btn" :to="{ name: 'posts-editor' }">写文章</router-link>
+      </template>
+    </PageHero>
 
     <div class="home-filter">
       <div class="search-box home-search">
@@ -100,7 +106,7 @@ function toggleTag(tag) {
 
     <template v-if="filtered.length">
       <section v-for="[year, list] in byYear" :key="year" class="year-group">
-        <h2 class="year-label">{{ year }}</h2>
+        <GroupLabel :label="year" :count="list.length" />
         <ul class="post-list">
           <li v-for="post in list" :key="post.slug">
             <router-link class="post-card" :to="{ name: 'post', params: { slug: post.slug } }">
@@ -110,7 +116,12 @@ function toggleTag(tag) {
               </div>
               <h3 class="post-title">{{ post.title }}</h3>
               <div v-if="post.tags.length" class="post-tags">
-                <span v-for="tag in post.tags" :key="tag">{{ tag }}</span>
+                <span
+                  v-for="tag in post.tags"
+                  :key="tag"
+                  :title="`筛选「${tag}」`"
+                  @click.prevent.stop="toggleTag(tag)"
+                >{{ tag }}</span>
               </div>
               <span class="post-arrow">→</span>
             </router-link>
@@ -119,10 +130,11 @@ function toggleTag(tag) {
       </section>
     </template>
 
-    <div v-else class="home-empty">
-      <p class="home-empty-text">没有找到匹配的内容</p>
-      <p class="home-empty-sub">{{ activeTag ? `换个标签试试，或清除「${activeTag}」筛选` : '换个关键词试试' }}</p>
-      <button class="btn btn-sm" @click="query = ''; activeTag = ''">清除筛选</button>
-    </div>
+    <EmptyState v-else
+      :text="query || activeTag ? '没有找到匹配的内容' : '还没有文章'"
+      :sub="activeTag ? `换个标签试试，或清除「${activeTag}」筛选` : query ? '换个关键词试试' : '点「写文章」开始记录'"
+    >
+      <button v-if="query || activeTag" class="btn btn-sm" @click="query = ''; activeTag = ''">清除筛选</button>
+    </EmptyState>
   </div>
 </template>

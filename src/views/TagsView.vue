@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { getAllPosts } from '../utils/posts'
+import PageHero from '../components/PageHero.vue'
+import GroupLabel from '../components/GroupLabel.vue'
 
 const posts = computed(() => getAllPosts())
 const activeTag = ref('')
@@ -25,10 +27,10 @@ function select(tag) {
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">标签</h1>
-      <p class="hero-sub">{{ totalTags }} 个标签，把散落的文章串成线</p>
-    </header>
+    <PageHero
+      title="标签"
+      :sub="`${totalTags} 个标签，把散落的文章串成线`"
+    />
     <div class="tag-cloud">
       <button
         v-for="[tag, count] in tagCounts"
@@ -43,11 +45,12 @@ function select(tag) {
       </button>
     </div>
     <section v-if="activePosts.length" class="tag-section">
-      <h2 class="year-label">{{ activeTag }}</h2>
+      <GroupLabel :label="activeTag" :count="activePosts.length" />
       <ul class="tag-posts">
         <li v-for="post in activePosts" :key="post.slug" class="tag-post">
           <router-link class="tag-post-link" :to="{ name: 'post', params: { slug: post.slug } }">
-            {{ post.title }}
+            <span>{{ post.title }}</span>
+            <span class="tag-post-arrow">→</span>
           </router-link>
           <time class="tag-post-date">{{ post.date }}</time>
         </li>

@@ -10,6 +10,9 @@ import MusicPlayer from '../components/MusicPlayer.vue'
 import MediaManager from '../components/MediaManager.vue'
 import { checkPassword, getToken, deleteFile } from '../utils/githubFiles'
 import { getLocalUploads, addLocalUpload, removeLocalUpload, isLocalUpload } from '../utils/localMedia'
+import PageHero from '../components/PageHero.vue'
+import EmptyState from '../components/EmptyState.vue'
+import DeleteBar from '../components/DeleteBar.vue'
 
 const allTracks = computed(() => {
   const built = getAllMusic()
@@ -28,6 +31,7 @@ const showManage = ref(false)
 const deleting = ref(null)
 const deletePwd = ref('')
 const deleteMsg = ref('')
+const deleteBusy = ref(false)
 
 const viewTracks = computed(() => {
   const list = allTracks.value
@@ -104,6 +108,7 @@ async function confirmDelete() {
     return
   }
   if (!window.confirm(`确认删除「${deleting.value.title}」？该操作会同时删除音频文件和元数据。`)) return
+  deleteBusy.value = true
   try {
     if (isLocalUpload(deleting.value.slug)) {
       removeLocalUpload(deleting.value.slug)
@@ -119,6 +124,8 @@ async function confirmDelete() {
     deleting.value = null
   } catch (e) {
     deleteMsg.value = e.message
+  } finally {
+    deleteBusy.value = false
   }
 }
 
@@ -137,18 +144,19 @@ function onUploaded(item) {
     <div v-if="currentTrack && currentTrack.cover" class="music-bg-veil"></div>
 
     <div class="page">
-      <header class="hero">
-        <h1 class="hero-title">音乐</h1>
-        <p class="hero-sub">耳朵的收藏 · {{ tracks.length }} 首</p>
-        <div class="hero-actions">
+      <PageHero
+        title="音乐"
+        :sub="`耳朵的收藏 · ${tracks.length} 首`"
+      >
+        <template #actions>
           <button class="btn hero-btn" @click="showUpload = !showUpload">
             {{ showUpload ? '收起上传' : '上传音乐' }}
           </button>
           <button class="btn hero-btn" :class="{ 'btn-on': showManage }" @click="showManage = !showManage">
             {{ showManage ? '退出管理' : '管理' }}
           </button>
-        </div>
-      </header>
+        </template>
+      </PageHero>
 
       <MediaManager
         v-if="showUpload"
@@ -161,23 +169,17 @@ function onUploaded(item) {
         @uploaded="onUploaded"
       />
 
-      <div v-if="deleting" class="delete-bar">
-        <div class="delete-bar-main">
-          <p class="delete-bar-title">删除「{{ deleting.title }}」</p>
-          <p class="delete-bar-sub">将删除音频文件与元数据，需要操作密码</p>
-        </div>
-        <input
-          v-model="deletePwd"
-          class="input delete-pwd"
-          type="password"
-          placeholder="操作密码"
-          @keydown.enter="confirmDelete"
-        />
-        <button class="btn btn-sm" @click="deletePwd = '123456'">一键填充</button>
-        <button class="btn btn-sm btn-danger" @click="confirmDelete">确认删除</button>
-        <button class="btn btn-sm" @click="cancelDelete">取消</button>
-        <p v-if="deleteMsg" class="editor-msg">{{ deleteMsg }}</p>
-      </div>
+      <DeleteBar
+        v-if="deleting"
+        v-model:pwd="deletePwd"
+        :title="`删除「${deleting.title}」`"
+        sub="将删除音频文件与元数据，需要操作密码"
+        :msg="deleteMsg"
+        :busy="deleteBusy"
+        confirm-label="确认删除"
+        @confirm="confirmDelete"
+        @cancel="cancelDelete"
+      />
 
       <div class="mp-viewbar">
         <button class="chip" :class="{ on: viewMode === 'all' }" @click="viewMode = 'all'">
@@ -237,9 +239,7 @@ function onUploaded(item) {
           </div>
         </div>
 
-        <p v-if="!tracks.length && !showManage" class="hero-sub" style="padding: 48px 0">
-          还没有音乐。点「上传音乐」添加第一首。
-        </p>
+        <EmptyState v-if="!tracks.length && !showManage" text="还没有音乐" sub="点「上传音乐」添加第一首" />
       </section>
     </div>
   </div>

@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { relativeTime } from '../utils/format'
+import PageHero from '../components/PageHero.vue'
+import GroupLabel from '../components/GroupLabel.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const commits = ref([])
 const loading = ref(true)
@@ -9,6 +12,19 @@ const error = ref('')
 const CACHE_KEY = 'timeline-commits'
 const CACHE_TTL = 5 * 60 * 1000 // 5 分钟
 const API_URL = 'https://api.github.com/repos/wmoonlq/blog/commits?per_page=60'
+
+const KIND_MAP = {
+  feat: ['功能', 'feat'],
+  fix: ['修复', 'fix'],
+  docs: ['文档', 'docs'],
+  chore: ['杂务', 'chore'],
+  ci: ['工程', 'ci'],
+  refactor: ['重构', 'refactor'],
+  perf: ['性能', 'perf'],
+  style: ['样式', 'style']
+}
+
+const KIND_FALLBACK = ['commit', 'other']
 
 function loadCache() {
   try {
@@ -47,12 +63,22 @@ function formatDate(iso) {
 function toView(item) {
   const commit = item.commit || {}
   const date = item.date || commit.author?.date || ''
+  const message = cleanMessage(item.message || commit.message)
   return {
     sha: item.sha.slice(0, 7),
     url: item.url || item.html_url || '#',
-    message: cleanMessage(item.message || commit.message),
-    date: formatDate(date)
+    message,
+    date: formatDate(date),
+    kind: detectKind(message)
   }
+}
+
+function detectKind(msg) {
+  const m = (msg || '').match(/^(feat|fix|docs|chore|ci|refactor|perf|style)(?:\(.+?\))?:/i)
+  if (!m) return KIND_FALLBACK
+  const key = m[1].toLowerCase()
+  const [label, cls] = KIND_MAP[key]
+  return [label, cls]
 }
 
 async function fetchCommits() {
@@ -61,7 +87,7 @@ async function fetchCommits() {
 
   const cached = loadCache()
   if (cached) {
-    commits.value = cached
+    commits.value = cached.map(toView)
     loading.value = false
   }
 
@@ -103,27 +129,22 @@ onMounted(fetchCommits)
 
 <template>
   <div class="page">
-    <header class="hero">
-      <h1 class="hero-title">时间线</h1>
-      <p class="hero-sub">GitHub 提交记录，站点演进的真实足迹 · {{ commits.length }} 次提交</p>
-    </header>
+    <PageHero
+      title="时间线"
+      :sub="`GitHub 提交记录，站点演进的真实足迹 · ${commits.length} 次提交`"
+    />
 
-    <div v-if="loading && !commits.length" class="timeline-empty">
-      <p class="hero-sub">加载提交记录…</p>
-    </div>
-    <div v-else-if="error && !commits.length" class="timeline-empty">
-      <p class="hero-sub">
-        {{ error }}
-        <button class="btn btn-sm" @click="fetchCommits">重试</button>
-      </p>
-    </div>
+    <EmptyState v-if="loading && !commits.length" text="加载提交记录…" />
+    <EmptyState v-else-if="error && !commits.length" :text="error">
+      <button class="btn btn-sm" @click="fetchCommits">重试</button>
+    </EmptyState>
 
     <div v-if="commits.length" class="timeline">
       <div v-for="[day, list] in groupByDay()" :key="day" class="timeline-day-group">
-        <h2 class="timeline-day">{{ day }}</h2>
+        <GroupLabel :label="day" :count="list.length" />
         <div v-for="c in list" :key="c.sha" class="timeline-item">
           <a class="timeline-commit" :href="c.url" target="_blank" rel="noopener">
-            <span class="timeline-kind">commit</span>
+            <span class="tl-kind" :class="c.kind[1]">{{ c.kind[0] }}</span>
             <span class="timeline-msg">{{ c.message }}</span>
             <span class="timeline-meta">
               <span class="timeline-sha">{{ c.sha }}</span>
