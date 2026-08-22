@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, reactive, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { parseLRC, findLyricIndex, parseYRC, findCharIndex } from '../utils/lrc'
 import {
   music, currentTrack, progress, modeLabel, sleepRemain,
@@ -35,6 +35,14 @@ let raf = null
 
 const openPop = ref('') // '' | 'rate' | 'sleep' | 'playlist'
 const newPlName = ref('')
+const panel = ref('list') // 'lyric' | 'list' — 酷狗式 歌词/播放列表 切换
+
+// 歌曲时长探测（懒加载，用于列表时长列）
+const durations = reactive({})
+const probedSlugs = new Set()
+let probeQueue = []
+let probing = false
+let probeEl = null
 
 const OFFSET_KEY = 'lyric-adjust'
 
@@ -74,6 +82,57 @@ function fmtRemain(s) {
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
   return h ? `${h}小时${m}分` : `${m}分钟`
+}
+
+function fmtDur(s) {
+  if (!isFinite(s) || s <= 0) return '--:--'
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+}
+
+function rowDur(t) {
+  return fmtDur(durations[t.slug])
+}
+
+// ---- 时长懒探测（列表可见时逐首读 metadata） ----
+function startProbe() {
+  const fresh = props.tracks.filter(
+    (t) => t.source && t.slug !== slug.value && !durations[t.slug] && !probedSlugs.has(t.slug)
+  )
+  probeQueue.push(...fresh.map((t) => t.slug))
+  runProbe()
+}
+
+function runProbe() {
+  if (probing || !probeQueue.length) return
+  probing = true
+  const s = probeQueue.shift()
+  const t = props.tracks.find((x) => x.slug === s)
+  if (!t) {
+    probing = false
+    runProbe()
+    return
+  }
+  const el = new Audio()
+  probeEl = el
+  const settle = () => {
+    if (probeEl === el) probeEl = null
+    el.removeAttribute('src')
+    probing = false
+    runProbe()
+  }
+  el.preload = 'metadata'
+  el.onloadedmetadata = () => {
+    if (isFinite(el.duration) && el.duration > 0) durations[s] = el.duration
+    probedSlugs.add(s)
+    settle()
+  }
+  el.onerror = () => {
+    probedSlugs.add(s)
+    settle()
+  }
+  el.src = t.source
 }
 
 // ---- 歌词加载 ----
@@ -198,7 +257,7 @@ function drawSpectrum() {
   c.scale(dpr, dpr)
 
   const data = new Uint8Array(analyser.frequencyBinCount)
-  const bars = 56
+  const bars = 40
   const style = getComputedStyle(document.documentElement)
   const accent = style.getPropertyValue('--accent').trim() || '#B68D73'
   const text = style.getPropertyValue('--text').trim() || '#1A1816'
@@ -259,17 +318,44 @@ watch(
   }
 )
 
+watch(panel, (v) => {
+  if (v === 'list') startProbe()
+})
+
+watch(
+  () => props.tracks,
+  () => {
+    if (panel.value === 'list') startProbe()
+  }
+)
+
+// 当前曲目时长直接来自播放器
+watch(
+  () => music.duration,
+  (d) => {
+    const t = currentTrack.value
+    if (t && isFinite(d) && d > 0) durations[t.slug] = d
+  }
+)
+
 onMounted(() => {
   window.addEventListener('resize', () => raf && drawSpectrum())
   if (music.playing) {
     resumeAudioCtx()
     drawSpectrum()
   }
+  if (panel.value === 'list') startProbe()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', () => raf && drawSpectrum())
   cancelAnimationFrame(raf)
+  probeQueue = []
+  probing = false
+  if (probeEl) {
+    probeEl.removeAttribute('src')
+    probeEl = null
+  }
   // 注意：绝不 close 全局 audioCtx（会切断全局音频输出）
 })
 
@@ -303,52 +389,80 @@ function toggleInPl(pid) {
 </script>
 
 <template>
-  <div class="music-player" :class="{ hasLyrics: lyrics.length }">
+  <div class="music-player">
     <div v-if="openPop" class="mp-backdrop" @click="closePops"></div>
 
-    <div class="mp-body">
-      <div class="mp-left">
-        <div class="mp-disc" :class="{ spin: playing }">
-          <div
-            class="mp-disc-cover"
-            :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}"
-          >
-            <span v-if="!track || !track.cover" class="mp-disc-glyph">♫</span>
-          </div>
-          <span class="mp-disc-spindle"></span>
+    <!-- 头部：唱片 + 歌曲信息 + 主控制 -->
+    <div class="mp-head">
+      <div class="mp-disc" :class="{ spin: playing }" title="播放 / 暂停" @click="togglePlay">
+        <div
+          class="mp-disc-cover"
+          :style="track && track.cover ? { backgroundImage: `url(${track.cover})` } : {}"
+        >
+          <span v-if="!track || !track.cover" class="mp-disc-glyph">♫</span>
         </div>
-        <div class="mp-info">
-          <div class="mp-info-row">
-            <p class="mp-title">{{ track ? track.title : '—' }}</p>
-            <button class="mp-fav" :class="{ on: isFav }" :title="isFav ? '取消收藏' : '收藏'" @click="toggleFav">
-              {{ isFav ? '♥' : '♡' }}
+        <span class="mp-disc-spindle"></span>
+      </div>
+
+      <div class="mp-head-main">
+        <div class="mp-info-row">
+          <p class="mp-title">{{ track ? track.title : '—' }}</p>
+          <button class="mp-fav" :class="{ on: isFav }" :title="isFav ? '取消收藏' : '收藏'" @click="toggleFav">
+            {{ isFav ? '♥' : '♡' }}
+          </button>
+          <div class="mp-pop-root">
+            <button class="mp-btn mp-addlist" title="加入歌单" @click="openPop = openPop === 'playlist' ? '' : 'playlist'">
+              + 歌单
             </button>
-            <div class="mp-pop-root">
-              <button class="mp-btn mp-addlist" title="加入歌单" @click="openPop = openPop === 'playlist' ? '' : 'playlist'">
-                + 歌单
-              </button>
-              <div v-if="openPop === 'playlist'" class="mp-pop">
-                <p class="mp-pop-title">加入歌单</p>
-                <div v-for="pl in prefs.playlists" :key="pl.id" class="mp-pop-row">
-                  <button class="mp-pop-check" @click="toggleInPl(pl.id)">
-                    <span :class="{ on: slug && isInPlaylist(pl.id, slug) }">{{ slug && isInPlaylist(pl.id, slug) ? '☑' : '☐' }}</span>
-                    {{ pl.name }}
-                  </button>
-                </div>
-                <div v-if="!prefs.playlists.length" class="mp-pop-empty">还没有歌单</div>
-                <div class="mp-pop-new">
-                  <input v-model="newPlName" class="input" placeholder="新建歌单" @keydown.enter="doCreatePl" />
-                  <button class="btn btn-sm" @click="doCreatePl">新建</button>
-                </div>
+            <div v-if="openPop === 'playlist'" class="mp-pop">
+              <p class="mp-pop-title">加入歌单</p>
+              <div v-for="pl in prefs.playlists" :key="pl.id" class="mp-pop-row">
+                <button class="mp-pop-check" @click="toggleInPl(pl.id)">
+                  <span :class="{ on: slug && isInPlaylist(pl.id, slug) }">{{ slug && isInPlaylist(pl.id, slug) ? '☑' : '☐' }}</span>
+                  {{ pl.name }}
+                </button>
+              </div>
+              <div v-if="!prefs.playlists.length" class="mp-pop-empty">还没有歌单</div>
+              <div class="mp-pop-new">
+                <input v-model="newPlName" class="input" placeholder="新建歌单" @keydown.enter="doCreatePl" />
+                <button class="btn btn-sm" @click="doCreatePl">新建</button>
               </div>
             </div>
           </div>
-          <p class="mp-artist">{{ track && track.artist ? track.artist : '未知歌手' }}</p>
         </div>
-        <canvas ref="canvasRef" class="mp-spectrum"></canvas>
+        <p class="mp-artist">{{ track && track.artist ? track.artist : '未知歌手' }}</p>
+        <div class="mp-head-ctrl">
+          <button class="mp-btn" title="上一首" @click="prev">⏮</button>
+          <button class="mp-btn mp-play" @click="togglePlay">{{ playing ? '❚❚' : '▶' }}</button>
+          <button class="mp-btn" title="下一首" @click="next(true)">⏭</button>
+          <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="cycleMode">
+            {{ mode === 'random' ? '⇄' : mode === 'loop' ? '⟳' : mode === 'list' ? '⇅' : '→' }}
+          </button>
+        </div>
       </div>
 
-      <div class="mp-right">
+      <canvas ref="canvasRef" class="mp-spectrum"></canvas>
+    </div>
+
+    <!-- 进度条：时间两端对齐 -->
+    <div class="mp-progress-row">
+      <span class="mp-time">{{ fmt(current) }}</span>
+      <div class="mp-progress" @click="seek($event)">
+        <div class="mp-progress-fill" :style="{ width: `${progress}%` }"></div>
+      </div>
+      <span class="mp-time">{{ fmt(duration) }}</span>
+    </div>
+
+    <!-- 内容面板：歌词 / 播放列表 -->
+    <div class="mp-panel">
+      <div class="mp-tabs">
+        <button class="mp-tab" :class="{ on: panel === 'lyric' }" @click="panel = 'lyric'">歌词</button>
+        <button class="mp-tab" :class="{ on: panel === 'list' }" @click="panel = 'list'">
+          播放列表 <span class="mp-tab-count">{{ tracks.length }}</span>
+        </button>
+      </div>
+
+      <div v-show="panel === 'lyric'" class="mp-lyric-panel">
         <div v-if="!karaoke && lyrics.length" ref="lyricBoxRef" class="mp-lyrics">
           <p
             v-for="(line, i) in lyrics"
@@ -393,39 +507,49 @@ function toggleInPl(pid) {
         </div>
       </div>
 
-      <div class="mp-tracks">
-        <p class="mp-tracks-title">播放列表 <span class="mp-tracks-count">{{ tracks.length }}</span></p>
-        <div class="mp-tracks-list">
-          <button
+      <div v-show="panel === 'list'" class="mp-list-panel">
+        <div class="mp-list-head">
+          <span class="mp-col-no">#</span>
+          <span class="mp-col-title">歌曲</span>
+          <span class="mp-col-artist">歌手</span>
+          <span class="mp-col-dur">时长</span>
+        </div>
+        <div class="mp-list-scroll">
+          <div
             v-for="(t, i) in tracks"
             :key="t.slug"
-            class="mp-item"
+            class="mp-list-row"
             :class="{ on: isCurrent(t.slug) }"
             @click="playAt(i)"
           >
-            <span class="mp-item-title">{{ t.title }}</span>
-            <span class="mp-item-artist">{{ t.artist }}</span>
-          </button>
+            <span class="mp-col-no">
+              <span v-if="isCurrent(t.slug)" class="mp-eq"><i></i><i></i><i></i></span>
+              <span v-else class="mp-row-no">{{ String(i + 1).padStart(2, '0') }}</span>
+            </span>
+            <span class="mp-col-title">
+              <span class="mp-row-title">{{ t.title }}</span>
+              <span v-if="t.pending" class="mp-row-pending">待发布</span>
+              <button
+                class="mp-row-fav"
+                :class="{ on: isFavorite(t.slug) }"
+                :title="isFavorite(t.slug) ? '取消收藏' : '收藏'"
+                @click.stop="toggleFavorite(t.slug)"
+              >{{ isFavorite(t.slug) ? '♥' : '♡' }}</button>
+            </span>
+            <span class="mp-col-artist">{{ t.artist || '未知歌手' }}</span>
+            <span class="mp-col-dur">{{ rowDur(t) }}</span>
+          </div>
           <p v-if="!tracks.length" class="mp-empty">暂无音乐，先上传一首吧</p>
         </div>
       </div>
     </div>
 
-    <div class="mp-progress" @click="seek($event)">
-      <div class="mp-progress-fill" :style="{ width: `${progress}%` }"></div>
-    </div>
-    <div class="mp-row">
-      <span class="mp-time">{{ fmt(current) }} / {{ fmt(duration) }}</span>
-      <div class="mp-ctrl">
-        <button class="mp-btn" title="上一首" @click="prev">⏮</button>
-        <button class="mp-btn mp-play" @click="togglePlay">{{ playing ? '❚❚' : '▶' }}</button>
-        <button class="mp-btn" title="下一首" @click="next(true)">⏭</button>
+    <!-- 底部工具条 -->
+    <div class="mp-bar">
+      <div class="mp-vol" :title="`音量 ${Math.round(volume * 100)}%`" @click="setVol($event)">
+        <div class="mp-vol-fill" :style="{ width: `${volume * 100}%` }"></div>
       </div>
-      <div class="mp-tools">
-        <div class="mp-vol" @click="setVol($event)">
-          <div class="mp-vol-fill" :style="{ width: `${volume * 100}%` }"></div>
-        </div>
-
+      <div class="mp-bar-right">
         <div class="mp-pop-root">
           <button class="mp-btn mp-rate" title="倍速" @click="openPop = openPop === 'rate' ? '' : 'rate'">
             {{ music.rate }}×
@@ -456,10 +580,6 @@ function toggleInPl(pid) {
             >{{ m }}分钟</button>
           </div>
         </div>
-
-        <button class="mp-btn mp-mode" :title="`播放模式：${modeLabel}`" @click="cycleMode">
-          {{ mode === 'random' ? '⇄' : mode === 'loop' ? '⟳' : mode === 'list' ? '⇅' : '→' }}
-        </button>
       </div>
     </div>
   </div>
