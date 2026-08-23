@@ -25,37 +25,36 @@ onBeforeUnmount(() => cancelAnimationFrame(raf))
     <div class="sharingan-eye" :class="{ paused: !spin }">
       <div class="sharingan-glow"></div>
       <svg viewBox="0 0 100 100" class="sharingan-svg" aria-hidden="true">
-        <!-- 虹膜 -->
-        <circle class="sharingan-iris" cx="50" cy="50" r="46" />
-        <circle class="sharingan-rim" cx="50" cy="50" r="46" fill="none" />
-
-        <!-- 永恒万花筒纹样：黑瞳 + 六刃，整体旋转 -->
+        <!-- 永恒万花筒纹样：红底六瓣花 + 三片黑回旋刃 + 中心红环 -->
         <g class="sharingan-pattern">
-          <circle cx="50" cy="50" r="6.2" />
-          <path
-            d="M50 50 C56 36 66 26 80 20 C73 30 70 42 62 52 C58 57 54 54 50 50 Z"
-            transform="rotate(0 50 50)"
-          />
-          <path
-            d="M50 50 C56 36 66 26 80 20 C73 30 70 42 62 52 C58 57 54 54 50 50 Z"
-            transform="rotate(60 50 50)"
-          />
-          <path
-            d="M50 50 C56 36 66 26 80 20 C73 30 70 42 62 52 C58 57 54 54 50 50 Z"
-            transform="rotate(120 50 50)"
-          />
-          <path
-            d="M50 50 C56 36 66 26 80 20 C73 30 70 42 62 52 C58 57 54 54 50 50 Z"
-            transform="rotate(180 50 50)"
-          />
-          <path
-            d="M50 50 C56 36 66 26 80 20 C73 30 70 42 62 52 C58 57 54 54 50 50 Z"
-            transform="rotate(240 50 50)"
-          />
-          <path
-            d="M50 50 C56 36 66 26 80 20 C73 30 70 42 62 52 C58 57 54 54 50 50 Z"
-            transform="rotate(300 50 50)"
-          />
+          <!-- 六瓣红花底（带黑描边，形成环链） -->
+          <g class="sharingan-flower">
+            <path d="M50 50 Q34 30 50 6 Q66 30 50 50 Z" transform="rotate(0 50 50)" />
+            <path d="M50 50 Q34 30 50 6 Q66 30 50 50 Z" transform="rotate(60 50 50)" />
+            <path d="M50 50 Q34 30 50 6 Q66 30 50 50 Z" transform="rotate(120 50 50)" />
+            <path d="M50 50 Q34 30 50 6 Q66 30 50 50 Z" transform="rotate(180 50 50)" />
+            <path d="M50 50 Q34 30 50 6 Q66 30 50 50 Z" transform="rotate(240 50 50)" />
+            <path d="M50 50 Q34 30 50 6 Q66 30 50 50 Z" transform="rotate(300 50 50)" />
+          </g>
+
+          <!-- 三片黑色回旋刃，同向扫掠 -->
+          <g class="sharingan-blades">
+            <path
+              d="M50 50 C58 28 70 12 82 10 C72 24 66 40 62 56 C59 60 54 56 50 50 Z"
+              transform="rotate(0 50 50)"
+            />
+            <path
+              d="M50 50 C58 28 70 12 82 10 C72 24 66 40 62 56 C59 60 54 56 50 50 Z"
+              transform="rotate(120 50 50)"
+            />
+            <path
+              d="M50 50 C58 28 70 12 82 10 C72 24 66 40 62 56 C59 60 54 56 50 50 Z"
+              transform="rotate(240 50 50)"
+            />
+          </g>
+
+          <!-- 中心红环 -->
+          <circle class="sharingan-core" cx="50" cy="50" r="11" />
         </g>
       </svg>
     </div>

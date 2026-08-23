@@ -3039,19 +3039,26 @@ img {
   overflow: visible;
 }
 
-.sharingan-iris {
-  fill: var(--sharingan-red);
-}
-
-.sharingan-rim {
-  stroke: var(--sharingan-red-deep);
-  stroke-width: 2;
-}
-
 .sharingan-pattern {
   fill: var(--sharingan-black);
   animation: sharingan-spin 6s linear infinite;
   transform-origin: 50px 50px;
+}
+
+.sharingan-flower path {
+  fill: var(--sharingan-red);
+  stroke: var(--sharingan-black);
+  stroke-width: 1.6;
+}
+
+.sharingan-blades path {
+  fill: var(--sharingan-black);
+}
+
+.sharingan-core {
+  fill: var(--sharingan-red);
+  stroke: var(--sharingan-black);
+  stroke-width: 1.6;
 }
 
 .sharingan-eye.paused .sharingan-pattern {

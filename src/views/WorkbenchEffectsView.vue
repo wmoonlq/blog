@@ -39,7 +39,7 @@ const effectsList = [
   { title: '逐字律动', sub: '每字自有节拍', component: TextPulseEffect, kind: 'css' },
   { title: '流星雨', sub: '粒子如雨如流', component: MeteorFlow, kind: '3d' },
   { title: '反重力方块', sub: '方块被轻轻举起', component: AntiGravityEffect, kind: '3d' },
-  { title: '写轮眼', sub: '永恒万花筒 · 六刃旋转', component: SharinganEffect, kind: 'css' }
+  { title: '写轮眼', sub: '永恒万花筒 · 三刃回旋', component: SharinganEffect, kind: 'css' }
 ]
 
 const KIND_LABEL = { css: 'CSS', canvas: 'CANVAS', '3d': '3D' }

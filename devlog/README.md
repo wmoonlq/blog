@@ -660,8 +660,8 @@
 
 | 改动 | 说明 |
 |---|---|
-| 新增 `SharinganEffect.vue` | SVG 绘制：红色虹膜（`--sharingan-red`）+ 深红描边 + 黑瞳 + 六片顺时针弯曲刀刃（`path` 以 `rotate(0/60/120/180/240/300)` 复用同一轮廓，围绕瞳孔构成六刃纹样，模拟「永恒万花筒」），整体缓慢旋转 6s/圈，可「静止/转动」切换 |
-| 纹样结构 | 虹膜固定不转，`<g class="sharingan-pattern">`（黑瞳 + 六刃）整体 `sharingan-spin` 旋转，更贴近真实开眼动画；外围 `.sharingan-glow` 红色光晕呼吸脉动（`requestAnimationFrame` 驱动 opacity，正弦波动） |
+| 新增 `SharinganEffect.vue` | SVG 绘制佐助永恒万花筒标准造型：红底六瓣花（petal 顶点半径 ~44）+ 三片黑色同向回旋刃（`rotate` 120° 复用同一轮廓，扫掠形成万花筒动势）+ 中心红环（红底黑描边）；纹样整体缓慢旋转 6s/圈，可「静止/转动」切换 |
+| 纹样结构 | 虹膜固定不转，`<g class="sharingan-pattern">`（六瓣红花底 + 三刃 + 中心红环）整体 `sharingan-spin` 旋转；外围 `.sharingan-glow` 红色光晕呼吸脉动（`requestAnimationFrame` 驱动 opacity，正弦波动） |
 | 注册 | `WorkbenchEffectsView.vue` import + `effectsList` 追加 `kind:'css'` |
 | 样式 | 加在 `design.css` 特效段（与既有 firework/three 效果类同区）；红/深红经 `.sharingan-wrap` 局部变量注入，`:root[data-theme="dark"]` 下提亮保证深色底可辨；纹样黑用固定 `#16120F`（躺在红色虹膜上，两主题都清晰） |
 
@@ -674,7 +674,8 @@
 
 #### 2. 刀刃几何要能认出是写轮眼
 
-- 用单条二次贝塞尔闭合轮廓（中心 → 外缘尖端 → 回勾内侧 → 归中），旋转 6 份后缺口错位，呈现经典六刃 pinwheel；尖端落在半径 ~42（虹膜 r=46 内约 4px），避免顶到描边
+- 首版误用「六片 pinwheel」，与佐助永恒万花筒实际造型不符；按贴图重做为「红底六瓣花 + 三片黑回旋刃 + 中心红环」：黑色矩形刃从中心扫向半径 ~48（超出花尖 ~44 约 4px，形成回旋突出感），`rotate(0/120/240)` 三份同向，红花瓣每 60° 一份、让被刃覆道的花瓣被盖住而隔瓣露出，构成红黑相间的六尖花形
+- 花瓣用双二次贝塞尔（`M50 50 Q34 30 50 6 Q66 30 50 50 Z`）形成尖端朝外的叶片；加 1.6px 黑描边形成「环链」视觉
 
 ### 架构要点
 
