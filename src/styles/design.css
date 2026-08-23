@@ -2997,6 +2997,88 @@ img {
 }
 
 
+/* ---- 写轮眼（永恒万花筒） ---- */
+.sharingan-wrap {
+  --sharingan-red: #9E2B25;
+  --sharingan-red-deep: #6E1B16;
+  --sharingan-black: #16120F;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+:root[data-theme="dark"] .sharingan-wrap {
+  --sharingan-red: #B63B32;
+  --sharingan-red-deep: #7A211A;
+}
+
+.sharingan-eye {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sharingan-glow {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: var(--sharingan-red);
+  filter: blur(22px);
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
+}
+
+.sharingan-svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sharingan-iris {
+  fill: var(--sharingan-red);
+}
+
+.sharingan-rim {
+  stroke: var(--sharingan-red-deep);
+  stroke-width: 2;
+}
+
+.sharingan-pattern {
+  fill: var(--sharingan-black);
+  animation: sharingan-spin 6s linear infinite;
+  transform-origin: 50px 50px;
+}
+
+.sharingan-eye.paused .sharingan-pattern {
+  animation-play-state: paused;
+}
+
+@keyframes sharingan-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sharingan-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sharingan-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+
 /* ============================================================
    视频页 + 播放器
    ============================================================ */

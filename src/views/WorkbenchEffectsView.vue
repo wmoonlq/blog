@@ -18,6 +18,7 @@ import KnotWire from '../components/effects/KnotWire.vue'
 import MeteorFlow from '../components/effects/MeteorFlow.vue'
 import AntiGravityEffect from '../components/effects/AntiGravityEffect.vue'
 import ParticleRose from '../components/effects/ParticleRose.vue'
+import SharinganEffect from '../components/effects/SharinganEffect.vue'
 
 const effectsList = [
   { title: '粒子星云', sub: '900 颗粒子流转', component: ParticleNebula, kind: '3d' },
@@ -37,7 +38,8 @@ const effectsList = [
   { title: '立体卡片', sub: '跟随光标旋转', component: TiltCardEffect, kind: 'css' },
   { title: '逐字律动', sub: '每字自有节拍', component: TextPulseEffect, kind: 'css' },
   { title: '流星雨', sub: '粒子如雨如流', component: MeteorFlow, kind: '3d' },
-  { title: '反重力方块', sub: '方块被轻轻举起', component: AntiGravityEffect, kind: '3d' }
+  { title: '反重力方块', sub: '方块被轻轻举起', component: AntiGravityEffect, kind: '3d' },
+  { title: '写轮眼', sub: '永恒万花筒 · 六刃旋转', component: SharinganEffect, kind: 'css' }
 ]
 
 const KIND_LABEL = { css: 'CSS', canvas: 'CANVAS', '3d': '3D' }
