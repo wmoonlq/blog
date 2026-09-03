@@ -62,6 +62,15 @@
 - 验收铁律：`npm run build` 零错误、不碰 `vite.config.js`/`scripts/`/`src/generated/`、符合设计系统 tokens、无副本文件、需求逐项覆盖
 - 单个子代理可单独使用：task 工具调 blog-dev / blog-reviewer / blog-qa
 
+## Spec Kit（规格驱动开发，2026-09-03 起）
+
+- 已装 GitHub Spec Kit（`specify-cli` 1.0.4，pip 安装）+ opencode integration：斜杠命令在 `.opencode/commands/speckit.*.md`，模板/脚本/工作流在 `.specify/`，宪法在 `.specify/memory/constitution.md`
+- 流程：`/speckit.constitution`（项目原则，已填博客版宪法）→ `/speckit.specify`（功能规格，生成 `specs/<分支名>/spec.md`）→ `/speckit.plan`（技术计划）→ `/speckit.tasks`（任务分解）→ `/speckit.implement`（实现）→ `/speckit.converge`（对照收敛，循环至 Converged）
+- 可选命令：`/speckit.clarify`（plan 前澄清）、`/speckit.analyze`（tasks 后一致性分析）、`/speckit.checklist`（质量清单）
+- 命令格式为 markdown、`$ARGUMENTS` 传参；脚本类型选了 `ps`（Windows 默认），核心命令模板的 `{SCRIPT}` 会解析到 `.specify/scripts/powershell/`
+- 升级 CLI：`specify self check` / `specify self upgrade`；本项目从 PyPI 装 `specify-cli`（非 git 版本）
+- 与既有 devloop 的关系：小改动继续走 `/devloop`；较大功能需求可先用 speckit 流程产出 spec/plan/tasks，再交 blog-dev 实现
+
 ## 内容与媒体模块速查
 
 | 模块 | 元数据目录 | 文件目录 | 说明 |

@@ -18,6 +18,7 @@
 - [2026-08-19 随笔回收站](#2026-08-19-随笔回收站)
 - [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
 - [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
+- [2026-09-03 引入 Spec Kit 规格驱动开发](#2026-09-03-引入-spec-kit-规格驱动开发)
 
 ---
 
@@ -682,5 +683,46 @@
 - 与其它效果一致：不在组件内写 `<style>`，样式进 `design.css` 特效段；组件仅含模板与轻量 `raf` 光晕驱动
 - 颜色走局部变量 + 暗色覆盖，红色为效果专用色，不沾设计 tokens（tokens 仅 `--text` 等灰暖系，写轮眼必须红）
 - 待办：可加切换普通万花筒（三刃）/勾玉写轮眼纹样；刀刃数量按角色预设
+
+---
+
+## 2026-09-03 引入 Spec Kit 规格驱动开发
+
+### 背景
+
+仓库此前只有 `/devloop` 循环编码流程（开发 → 构建 → 审查 → 验收），无规格层。本次引入 GitHub 官方 Spec Kit（`github/spec-kit`）的 specify-cli，给较大功能需求补上「规格 → 计划 → 任务」的前置流程。
+
+### 功能迭代清单
+
+- 用 Python（`pip`）安装 `specify-cli` 1.0.4（PyPI 版；本机无 uv/pipx）
+- `specify init --here --force --non-interactive --integration opencode` 初始化：
+  - `.opencode/commands/speckit.*.md` 共 10 个斜杠命令（constitution/specify/plan/tasks/taskstoissues/implement/converge/clarify/analyze/checklist）
+  - `.specify/`：templates（spec/plan/tasks/checklist/constitution 模板）、scripts/powershell（ps 脚本类型，Windows 默认）、workflows（speckit）、memory（宪法）
+- 按博客 AGENTS.md 提炼并填入博客版宪法 `.specify/memory/constitution.md`：设计系统锁定、共享骨架组件优先、内容模块约定、构建发布红线、安全与凭据 5 条 + 开发流程段
+- AGENTS.md 新增「Spec Kit」一节，说明命令流程、`$ARGUMENTS` 传参、与 devloop 的分工
+
+### 踩坑记录
+
+#### 1. PowerShell 的 curl/npm 别名坑
+
+- **现象**：`curl` 被解析成 `Invoke-WebRequest` 报参数错误；`npm run build` 报「无法在管道中处理文档」
+- **解决**：API 请求用 `curl.exe`；npm 用 `npm.cmd`
+
+#### 2. Windows 无 uv/pipx
+
+- 官方推荐 `uv tool install specify-cli`，本机没装 uv；改用 `python -m pip install specify-cli`，效果一致（PyPI 包名 `specify-cli`）
+- 注意：源码 main 分支是 dev 版（1.0.5.dev0），PyPI 是稳定版 1.0.4，以 PyPI 为准
+
+#### 3. init 进非空目录
+
+- 博客仓库非空，`specify init --here` 需要 `--force` 跳过确认；`--non-interactive` 防止 picker 卡住
+- 初始化是 merge 语义，只新增 `.opencode/commands/` 与 `.specify/`，未改动 AGENTS.md、vite.config.js 等既有文件
+
+### 架构要点
+
+- opencode 集成：markdown 命令、`$ARGUMENTS` 传参，安装到 `.opencode/commands/`（与既有 `.opencode/agent/` 团队目录共存）
+- 宪法是命令的约束来源：`/speckit.plan` 会按宪法校验合规，因此宪法内容对齐 AGENTS.md 既有约定
+- 分工：小改动继续 `/devloop`；大功能先用 `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` 产出 `specs/<分支>/` 三件套，再交 blog-dev 实现
+- 待办：`/speckit.constitution` 命令实际执行时与手填宪法的一致性核验；是否需要 `.specify/` 进 .gitignore（目前整目录提交，便于跨机器复用）
 
 ---
