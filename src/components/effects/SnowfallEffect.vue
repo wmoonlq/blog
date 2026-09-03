@@ -44,7 +44,7 @@ function cssColor(varName, fallback) {
 }
 
 function draw() {
-  const snowColor = cssColor('--text', '#1A1816')
+  const snowColor = cssColor('--text', '#1B2430')
   ctx.clearRect(0, 0, W, H)
   flakes.forEach((f) => {
     f.sway += f.swaySpeed

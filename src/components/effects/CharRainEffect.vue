@@ -33,8 +33,8 @@ function cssColor(varName, fallback) {
 }
 
 function draw() {
-  const accent = cssColor('--accent', '#B68D73')
-  const text = cssColor('--text', '#1A1816')
+  const accent = cssColor('--accent', '#3B6FE0')
+  const text = cssColor('--text', '#1B2430')
   ctx.clearRect(0, 0, W, H)
   ctx.font = `${FONT}px "SFMono-Regular", Consolas, monospace`
   cols.forEach((col, i) => {

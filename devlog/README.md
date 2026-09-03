@@ -20,6 +20,7 @@
 - [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
 - [2026-09-03 引入 Spec Kit 规格驱动开发](#2026-09-03-引入-spec-kit-规格驱动开发)
 - [2026-09-03 全站体验优化：性能 · SEO · UI · 阅读 · 功能](#2026-09-03-全站体验优化性能--seo--ui--阅读--功能)
+- [2026-09-03 蓝白主题重制与灵动按钮](#2026-09-03-蓝白主题重制与灵动按钮)
 
 ---
 
@@ -774,5 +775,50 @@
 - 首屏 index chunk 145KB（gzip 55.9KB），未引入新依赖进首屏；three.js 特效页仍独立 546KB 懒加载
 - 代码高亮 token 配色走暖色系（keyword 深棕 / string 暖绿 / number 橙 / title 蓝灰），亮暗两套 `:root[data-theme]` 覆盖，与设计 tokens 风格统一
 - 待办：Giscus 启用后填 CATEGORY_ID；sitemap 每新增文章/笔记需手写同步
+
+---
+
+## 2026-09-03 蓝白主题重制与灵动按钮
+
+### 背景
+
+用户反馈原暖棕配色（米白 `#FBF9F6` + 棕 `#B68D73`）不好看，要求整体蓝白；随后要求按钮去掉传统描边风格，改为灵动效果；并确认布局保持「上导航 + 下背景与内容」。
+
+### 功能迭代清单
+
+- **tokens 重制**（design.css `:root` / `:root[data-theme="dark"]`）：
+  - 亮：`--bg:#FCFDFF; --text:#1B2430; --text-secondary:#5A6B82; --accent:#3B6FE0; --divider:#E4E9F2`
+  - 暗：`--bg:#0F172A; --text:#E6EDF7; --text-secondary:#94A3B8; --accent:#7AA2FF; --divider:#1E293B`
+  - 派生 tokens（bg-soft/overlay/search、hover-bg、code/pre-bg、accent-soft/strong/selection）全部按新色换算；阴影改蓝黑基调
+- **硬编码清理**：`.prose a` 下划线、`.fx-kind` 标签、`fx-dot-pulse`/`flash-note` 动画、`.draft-badge`、`.mp-disc` 唱片底（`#1B2430`）；canvas 特效组件（Fireworks/CharRain/Snowfall/Ripple/粒子拖尾/贪吃蛇/播放器）的 fallback 色批量替换，运行时仍优先读 CSS 变量；`threeTheme.js` fallback 同步
+- **hljs 色板**：亮色定制蓝系（keyword 主蓝 `#3B6FE0`、string 绿 `#1A7F37`、number 琥珀、title 深蓝、attr 紫），暗色 GitHub Dark 风（`#79C0FF` 蓝系 + 淡紫 `#D2A8FF`）
+- **灵动按钮体系**（新 token `--accent-glow`）：
+  - `.btn`：`::before` 蓝色从左滑入填充（scaleX + `cubic-bezier(0.22,1,0.36,1)`），hover 白字 + 上浮 2px + 蓝色光晕阴影，active 弹簧回弹挤压（`cubic-bezier(0.34,1.56,0.64,1)`）
+  - `.btn-primary` hover 改为浮起+光晕（弃用 opacity 变淡）；`.btn-danger` 保持红 + 红色光晕
+  - `.chip` / `.tag-cloud-link`：hover 上浮 + accent-soft 底 + 光晕
+  - 工具按钮（copy-link/edit-link/readsize/toc-toggle/code-copy）：hover 浅蓝填充 + 微上浮
+  - `.nav-search`：hover 蓝底白字 + scale(1.06) 弹跳；`.toc-link` hover 左侧滑入 4px
+- **布局层次**：`--bg-soft` 提到 0.9/0.92（导航更实、不被背景干扰），`--bg-tint-layer` 0.78→0.72（背景图更清晰）；背景 fixed 全屏 z-index -2/-1，导航 sticky 顶部，顺序不变
+
+### 踩坑记录
+
+#### 1. `.btn-primary`/`.btn-danger` 与 ::before 填充冲突
+
+- 填充式按钮本身已有 accent 底色，::before 同色滑入无视觉变化但会盖住 danger 红
+- **解决**：`.btn-danger::before` 单独指定 `#B71C1C`，与按钮同色
+
+#### 2. 动画曲线选择
+
+- 回弹感需要 overshoot 曲线：`cubic-bezier(0.34, 1.56, 0.64, 1)`（transform 专用）；填充滑入用缓出 `cubic-bezier(0.22, 1, 0.36, 1)`；颜色过渡保留原 `--transition`。避免所有属性共用 overshoot 造成抖动
+
+#### 3. canvas 特效 fallback 色是字符串比对
+
+- FireworksEffect 的 `COLORS` 数组既是色板又是 `rk.color === '#xxx'` 比对键，批量替换时需一并替换比对值（行 52），否则粒子颜色逻辑失效
+
+### 架构要点
+
+- 主题切换零成本：全部组件走 `var()`，只改 tokens 一处即全站生效
+- 新增 `--accent-glow` token（亮 `rgba(59,111,224,0.28)` / 暗 `rgba(122,162,255,0.3)`）供按钮光晕统一使用
+- 布局分层：背景（fixed -2/-1）→ 导航（sticky 64px，bg-soft 0.9+blur）→ 内容（container 900px）
 
 ---

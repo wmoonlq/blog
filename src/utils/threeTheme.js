@@ -21,9 +21,9 @@ export function hexToRgb(hex) {
 
 export function themeColors() {
   return {
-    accent: cssVar('--accent', '#B68D73'),
-    text: cssVar('--text', '#1A1816'),
-    textSecondary: cssVar('--text-secondary', '#5E554C'),
-    divider: cssVar('--divider', '#EAE3DB')
+accent: cssVar('--accent', '#3B6FE0'),
+  text: cssVar('--text', '#1B2430'),
+    textSecondary: cssVar('--text-secondary', '#5A6B82'),
+    divider: cssVar('--divider', '#E4E9F2')
   }
 }

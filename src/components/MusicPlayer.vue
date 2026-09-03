@@ -259,8 +259,8 @@ function drawSpectrum() {
   const data = new Uint8Array(analyser.frequencyBinCount)
   const bars = 40
   const style = getComputedStyle(document.documentElement)
-  const accent = style.getPropertyValue('--accent').trim() || '#B68D73'
-  const text = style.getPropertyValue('--text').trim() || '#1A1816'
+  const accent = style.getPropertyValue('--accent').trim() || '#3B6FE0'
+  const text = style.getPropertyValue('--text').trim() || '#1B2430'
 
   function frame() {
     c.clearRect(0, 0, w, h)

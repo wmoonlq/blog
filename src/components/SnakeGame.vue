@@ -157,8 +157,8 @@ function draw() {
   const canvas = canvasRef.value
   if (!canvas || !ctx) return
   const s = getComputedStyle(document.documentElement)
-  const accent = s.getPropertyValue('--accent').trim() || '#B68D73'
-  const text = s.getPropertyValue('--text').trim() || '#1A1816'
+  const accent = s.getPropertyValue('--accent').trim() || '#3B6FE0'
+  const text = s.getPropertyValue('--text').trim() || '#1B2430'
   ctx.clearRect(0, 0, COLS * CELL, ROWS * CELL)
   if (food) {
     ctx.fillStyle = accent

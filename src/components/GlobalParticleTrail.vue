@@ -12,7 +12,7 @@ const mouse = { x: 0, y: 0, active: false }
 
 function colors() {
   const s = getComputedStyle(document.documentElement)
-  return { accent: s.getPropertyValue('--accent').trim() || '#B68D73', text: s.getPropertyValue('--text').trim() || '#1A1816' }
+  return { accent: s.getPropertyValue('--accent').trim() || '#3B6FE0', text: s.getPropertyValue('--text').trim() || '#1B2430' }
 }
 
 function resize() {

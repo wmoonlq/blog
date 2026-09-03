@@ -28,7 +28,7 @@
 ## 设计系统
 
 锁定的 Design Tokens 与排版规则见 `src/styles/design.css` 及 README：
-`--bg:#FBF9F6; --text:#1A1816; --accent:#B68D73` 等；衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变无彩色图标。
+`--bg:#FCFDFF; --text:#1B2430; --accent:#3B6FE0` 等（暗色 `#0F172A`/`#E6EDF7`/`#7AA2FF`）；衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变无彩色图标。
 
 ## 共享骨架组件（2026-08-23 起）
 

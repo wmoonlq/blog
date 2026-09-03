@@ -5,7 +5,7 @@
 ## Core Principles
 
 ### I. 设计系统锁定
-所有页面必须使用 `src/styles/design.css` 中锁定的 Design Tokens：`--bg:#FBF9F6; --text:#1A1816; --accent:#B68D73` 等。衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变、无彩色图标。禁止引入新设计风格或偏离 tokens 的硬编码颜色。
+所有页面必须使用 `src/styles/design.css` 中锁定的 Design Tokens：`--bg:#FCFDFF; --text:#1B2430; --accent:#3B6FE0` 等（暗色 `#0F172A`/`#E6EDF7`/`#7AA2FF`）。衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变、无彩色图标。禁止引入新设计风格或偏离 tokens 的硬编码颜色。
 
 ### II. 共享骨架组件优先
 新页面一律使用共享骨架组件：`PageHero.vue`（页面头部）、`GroupLabel.vue`（分组标题）、`EmptyState.vue`（空状态）、`DeleteBar.vue`（密码确认条）。页面骨架约定：`PageHero → 筛选/工具区 → GroupLabel 分组 → EmptyState 兜底`。禁止写内联重复类或手写空态。

@@ -72,14 +72,16 @@ date: "2026-08-12"
 Design Tokens 强制锁定于 `src/styles/design.css` 的 `:root`，不得随意改动：
 
 ```css
---bg: #FBF9F6;
---text: #1A1816;
---text-secondary: #5E554C;
---accent: #B68D73;
---divider: #EAE3DB;
+--bg: #FCFDFF;
+--text: #1B2430;
+--text-secondary: #5A6B82;
+--accent: #3B6FE0;
+--divider: #E4E9F2;
 --radius: 12px;
---shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.05);
+--shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.08);
 ```
+
+暗色（`:root[data-theme="dark"]`）：`--bg: #0F172A; --text: #E6EDF7; --accent: #7AA2FF; --divider: #1E293B`。
 
 排版约束：
 

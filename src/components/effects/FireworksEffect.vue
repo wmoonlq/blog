@@ -5,7 +5,7 @@ const zoneRef = ref(null)
 let rockets = []
 let raf = null
 
-const COLORS = ['#B68D73', '#8D7B6A', '#5E554C', '#1A1816', '#C9A88E']
+const COLORS = ['#3B6FE0', '#7AA2FF', '#5A6B82', '#1B2430', '#9FC0FF']
 
 function launch(x, y) {
   const particles = []
@@ -35,8 +35,8 @@ function draw() {
   const ctx = zoneRef.value?.getContext?.('2d')
   if (!ctx) return
   const rect = zoneRef.value.getBoundingClientRect()
-  const accent = cssColor('--accent', '#B68D73')
-  const text = cssColor('--text', '#1A1816')
+  const accent = cssColor('--accent', '#3B6FE0')
+  const text = cssColor('--text', '#1B2430')
   ctx.clearRect(0, 0, rect.width, rect.height)
   for (let i = rockets.length - 1; i >= 0; i--) {
     const rk = rockets[i]
@@ -49,7 +49,7 @@ function draw() {
       if (p.life <= 0) return
       alive = true
       ctx.globalAlpha = Math.max(0, p.life)
-      ctx.fillStyle = rk.color === '#B68D73' ? accent : rk.color === '#1A1816' ? text : rk.color
+      ctx.fillStyle = rk.color === '#3B6FE0' ? accent : rk.color === '#1B2430' ? text : rk.color
       ctx.beginPath()
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
       ctx.fill()

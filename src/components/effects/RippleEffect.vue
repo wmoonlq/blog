@@ -30,10 +30,10 @@ function onClick(e) {
 }
 
 function draw() {
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#B68D73'
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3B6FE0'
   const rgb = accent.startsWith('#') && accent.length === 7
     ? `${parseInt(accent.slice(1, 3), 16)}, ${parseInt(accent.slice(3, 5), 16)}, ${parseInt(accent.slice(5, 7), 16)}`
-    : '182, 141, 115'
+    : '59, 111, 224'
   ctx.clearRect(0, 0, W, H)
   for (let i = ripples.length - 1; i >= 0; i--) {
     const r = ripples[i]
