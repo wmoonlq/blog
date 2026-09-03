@@ -3561,8 +3561,12 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   inset: 0;
   z-index: -1;
   background: var(--bg);
-  opacity: 0.72;
-  transition: background var(--transition);
+  opacity: 0.4;
+  transition: background var(--transition), opacity var(--transition);
+}
+
+:root[data-theme="dark"] .bg-tint-layer {
+  opacity: 0.55;
 }
 
 
