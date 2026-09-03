@@ -67,12 +67,6 @@ const router = createRouter({
       meta: { title: '音乐' }
     },
     {
-      path: '/cmd',
-      name: 'cmd',
-      component: () => import('./views/CmdView.vue'),
-      meta: { title: '命令行' }
-    },
-    {
       path: '/about',
       name: 'about',
       component: () => import('./views/AboutView.vue'),

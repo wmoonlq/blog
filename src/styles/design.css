@@ -3696,117 +3696,6 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   z-index: 1;
 }
 
-/* 命令行页 — 假 cmd 窗口 */
-.cmd-window {
-  border: var(--border-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  margin-bottom: 48px;
-  cursor: text;
-}
-
-.cmd-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: var(--hover-bg);
-  border-bottom: var(--border-card);
-}
-
-.cmd-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--divider);
-}
-
-.cmd-dot.on {
-  background: var(--accent);
-}
-
-.cmd-title {
-  margin-left: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.cmd-bridge {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.cmd-bridge-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--divider);
-  transition: background var(--transition);
-}
-
-.cmd-bridge.on .cmd-bridge-dot {
-  background: var(--accent);
-}
-
-.cmd-bridge.on {
-  color: var(--text);
-}
-
-.cmd-body {
-  background: var(--pre-bg);
-  padding: 16px 18px;
-  font-family: var(--font-mono);
-  font-size: 13.5px;
-  line-height: 1.7;
-  max-height: 60vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-
-.cmd-line {
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: var(--text);
-}
-
-.cmd-line.dim {
-  color: var(--text-secondary);
-}
-
-.cmd-line.err {
-  color: #B71C1C;
-}
-
-.cmd-row {
-  display: flex;
-  align-items: center;
-}
-
-.cmd-prompt {
-  color: var(--accent);
-  margin-right: 8px;
-  white-space: pre;
-  user-select: none;
-}
-
-.cmd-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  padding: 0;
-  color: var(--text);
-  font: inherit;
-  caret-color: var(--accent);
-}
-
 .music-player {
   border: var(--border-card);
   border-radius: var(--radius);
@@ -5828,4 +5717,47 @@ mark {
 
 .toc-link:not(.is-sub):hover {
   padding-left: 4px;
+}
+
+/* ============================================================
+   导航图标 2026-09-03 — 单色 SVG + hover 微动效
+   ============================================================ */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-drop-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon {
+  transform: translateY(-1px) scale(1.12);
+}
+
+.nav-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-search svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-search:hover svg {
+  transform: scale(1.08);
 }

@@ -35,4 +35,3 @@
 - AI 代理团队：`.opencode/agent/` 中 blog-dev（实现）、blog-reviewer（只读审查）、blog-qa（构建验证+验收裁决）
 - 循环流程 `/devloop <需求>`：开发 → 构建 → 审查 → 验收，不通过自动带修复指令重跑（最多 3 轮）
 - 验收铁律：build 零错误、不碰构建文件、符合设计 tokens、无副本文件、需求逐项覆盖
-- 本地命令行桥接：`npm run bridge` 启动 `127.0.0.1:9876` HTTP+WebSocket 服务，页面 `/cmd` 连接
