@@ -227,6 +227,7 @@ img {
 
 .post-card {
   display: block;
+  background: var(--bg);
   border: var(--border-card);
   border-left: 2px solid var(--accent);
   border-radius: var(--radius);
@@ -478,6 +479,7 @@ img {
    工作台 — 贪吃蛇
    ============================================================ */
 .game-card {
+  background: var(--bg);
   border: var(--border-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -646,21 +648,13 @@ img {
   color: var(--text-secondary);
 }
 
-/* ---- 环形轨道容器 ---- */
-.fx-orbit {
-  position: relative;
-  width: 100%;
-  height: 860px;
-}
+/* ---- 环形轨道容器（已改造为阶梯轮播，保留占位注释） ---- */
 
 /* ---- 中心舞台（矩形展示区） ---- */
 .fx-stage {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   width: 420px;
   height: 320px;
+  margin: 0 auto 36px;
   border: 1px solid var(--divider);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -675,11 +669,11 @@ img {
 @keyframes fx-stage-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.94);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -754,109 +748,7 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   flex-shrink: 0;
 }
 
-/* ---- 轨道文字卡片 ---- */
-.fx-orbit-card {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  will-change: transform;
-  cursor: pointer;
-  border: 1px solid var(--divider);
-  border-radius: 10px;
-  background: var(--bg);
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  text-align: left;
-  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.fx-orbit-card-dot {
-  flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--divider);
-  transition: background var(--transition), transform var(--transition);
-}
-
-.fx-orbit-card-num {
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  opacity: 0.65;
-  font-variant-numeric: tabular-nums;
-  transition: color var(--transition), opacity var(--transition);
-}
-
-.fx-orbit-card-title {
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-  transition: color var(--transition);
-}
-
-.fx-orbit-card-sub {
-  max-width: 0;
-  overflow: hidden;
-  font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0;
-  transition: max-width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s;
-  white-space: nowrap;
-}
-
-.fx-orbit-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-card);
-  background: var(--bg);
-}
-
-.fx-orbit-card:hover .fx-orbit-card-dot {
-  background: var(--accent);
-  transform: scale(1.35);
-}
-
-.fx-orbit-card:hover .fx-orbit-card-num {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.fx-orbit-card:hover .fx-orbit-card-title {
-  color: var(--text);
-}
-
-.fx-orbit-card:hover .fx-orbit-card-sub {
-  max-width: 90px;
-  opacity: 1;
-}
-
-.fx-orbit-card.selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  box-shadow: var(--shadow-card);
-}
-
-.fx-orbit-card.selected .fx-orbit-card-dot {
-  background: var(--accent);
-  transform: scale(1.35);
-  animation: fx-dot-pulse 1.6s ease-in-out infinite;
-}
-
-.fx-orbit-card.selected .fx-orbit-card-num {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.fx-orbit-card.selected .fx-orbit-card-title {
-  color: var(--accent);
-}
-
+/* ---- 保留脉冲动画（.fx-orbit-card 已废弃） ---- */
 @keyframes fx-dot-pulse {
   0%,
   100% {
@@ -864,6 +756,149 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   }
   50% {
     box-shadow: 0 0 0 5px rgba(59, 111, 224, 0);
+  }
+}
+
+/* ---- 3D 阶梯轮播：近大远小 + 循环 + 过渡态 ---- */
+.fx-carousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-bottom: 48px;
+}
+
+.fx-car-track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: visible;
+}
+
+.fx-car-card {
+  flex-shrink: 0;
+  width: 170px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.45s ease;
+}
+
+.fx-car-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card);
+}
+
+.fx-car-card.d0 {
+  transform: scale(1);
+  opacity: 1;
+  z-index: 5;
+}
+
+.fx-car-card.d1 {
+  transform: scale(0.8) translateY(12px);
+  opacity: 0.5;
+  z-index: 4;
+}
+
+.fx-car-card.d2 {
+  transform: scale(0.64) translateY(24px);
+  opacity: 0.3;
+  z-index: 3;
+}
+
+.fx-car-card.d3 {
+  transform: scale(0.5) translateY(36px);
+  opacity: 0.16;
+  z-index: 2;
+}
+
+.fx-car-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--shadow-card);
+}
+
+.fx-car-card.selected .fx-car-title {
+  color: var(--accent);
+}
+
+.fx-car-kind {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.fx-car-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  transition: color var(--transition);
+}
+
+.fx-car-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fx-car-nav {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--divider);
+  border-radius: 50%;
+  background: var(--bg);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fx-car-nav:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+
+.fx-car-nav:active {
+  transform: scale(0.92);
+}
+
+@media (max-width: 720px) {
+  .fx-car-card {
+    width: 132px;
+  }
+  .fx-car-card.d3 {
+    opacity: 0;
+  }
+  .fx-carousel {
+    gap: 8px;
+  }
+  .fx-car-track {
+    gap: 8px;
   }
 }
 
@@ -1022,6 +1057,7 @@ border: 1px solid rgba(59, 111, 224, 0.35);
 }
 
 .note-card {
+  background: var(--bg);
   border: var(--border-card);
   border-left: 2px solid var(--accent);
   border-radius: var(--radius);
@@ -1147,6 +1183,7 @@ border: 1px solid rgba(59, 111, 224, 0.35);
 }
 
 .editor-card {
+  background: var(--bg);
   border: var(--border-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -1803,6 +1840,11 @@ border: 1px solid rgba(59, 111, 224, 0.35);
    ============================================================ */
 .post-layout {
   position: relative;
+  background: var(--bg);
+  border: var(--border-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 32px 32px 8px;
 }
 
 .toc {
@@ -2351,110 +2393,6 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   cursor: pointer;
   border-bottom: none;
   font-family: var(--font-sans);
-}
-
-/* ============================================================
-   标签页
-   ============================================================ */
-.tag-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-bottom: 48px;
-}
-
-.tag-cloud-link {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
-  padding: 8px 18px;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  background: transparent;
-  cursor: pointer;
-  transition: color var(--transition), border-color var(--transition), transform var(--transition);
-}
-
-.tag-cloud-link:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.tag-cloud-link.on {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.tag-cloud-link.on .tag-cloud-count {
-  color: var(--on-accent);
-  opacity: 0.75;
-}
-
-.tag-cloud-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.tag-section {
-  margin-bottom: 40px;
-}
-
-.tag-posts {
-  list-style: none;
-  padding-bottom: 8px;
-}
-
-.tag-post {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--hover-bg);
-}
-
-.tag-post-link {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 16px;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  transition: color var(--transition);
-}
-
-.tag-post-link:hover {
-  color: var(--accent);
-}
-
-.tag-post-arrow {
-  font-size: 13px;
-  color: var(--accent);
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity var(--transition), transform var(--transition);
-}
-
-.tag-post-link:hover .tag-post-arrow {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.tag-post-date {
-  flex-shrink: 0;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
 }
 
 /* ============================================================
@@ -3461,6 +3399,7 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  background: var(--bg);
   border: var(--border-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -3561,7 +3500,7 @@ border: 1px solid rgba(59, 111, 224, 0.35);
   inset: 0;
   z-index: -1;
   background: var(--bg);
-  opacity: 0.4;
+  opacity: 0.5;
   transition: background var(--transition), opacity var(--transition);
 }
 
@@ -3701,6 +3640,7 @@ border: 1px solid rgba(59, 111, 224, 0.35);
 }
 
 .music-player {
+  background: var(--bg);
   border: var(--border-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);

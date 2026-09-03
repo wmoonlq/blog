@@ -14,7 +14,6 @@ const items = [
   { name: 'notes', label: '随笔', icon: 'M17 3l4 4L8 20l-5 1 1-5L17 3z' },
   { name: 'videos', label: '视频', icon: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM10 8.5v7l6-3.5-6-3.5z' },
   { name: 'music', label: '音乐', icon: 'M9 18V5l10-2v13M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0z' },
-  { name: 'tags', label: '标签', icon: 'M3 3h7l11 11-7 7L3 10V3zM7.5 7.5h.01' },
   { name: 'timeline', label: '时间线', icon: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 7v5l3.5 2' },
   { name: 'workbench', label: '工作台', icon: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z' },
   { name: 'effects', label: '特效', icon: 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z' },

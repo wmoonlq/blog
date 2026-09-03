@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { settings, toggleTheme, setBackground, setNavBackground } from '../stores/settings'
 import { effects, toggleParticleTrail } from '../stores/effects'
 import { user, setNickname } from '../stores/user'
@@ -17,6 +17,11 @@ const uploading = ref(false)
 const uploadMsg = ref('')
 const progress = ref(0)
 const phase = ref('')
+
+const API = 'https://api.github.com'
+const BG_REPO = 'wmoonlq/blog'
+const gallery = ref([])
+const galleryLoading = ref(false)
 
 function openPanel() {
   open.value = true
@@ -60,6 +65,49 @@ function clearNavBackground() {
   navBgInput.value = ''
   setNavBackground('')
 }
+
+async function loadGallery() {
+  gallery.value = []
+  galleryLoading.value = true
+  try {
+    const res = await fetch(`${API}/repos/${BG_REPO}/contents/public/bg`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    gallery.value = (Array.isArray(data) ? data : [])
+      .filter((f) => f.type === 'file' && /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(f.name))
+      .sort((a, b) => (a.name < b.name ? 1 : -1))
+      .map((f) => ({ name: f.name, url: `/blog/bg/${f.name}` }))
+  } catch {
+    gallery.value = []
+  } finally {
+    galleryLoading.value = false
+  }
+}
+
+function selectBg(url) {
+  if (settings.background === url) {
+    clearBackground()
+  } else {
+    bgInput.value = url
+    setBackground(url)
+  }
+}
+
+function selectNavBg(url) {
+  if (settings.navBackground === url) {
+    clearNavBackground()
+  } else {
+    navBgInput.value = url
+    setNavBackground(url)
+  }
+}
+
+watch(
+  () => page.value,
+  (p) => {
+    if (p === 'background') loadGallery()
+  }
+)
 
 function onKeydown(e) {
   if (e.key === 'Escape') closePanel()

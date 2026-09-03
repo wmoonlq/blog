@@ -44,125 +44,70 @@ const effectsList = [
 
 const KIND_LABEL = { css: 'CSS', canvas: 'CANVAS', '3d': '3D' }
 
-// ---- 环形轨道 ----
-const orbitRef = ref(null)
-const selectedIndex = ref(0) // 默认展示第一个特效
-const cards = effectsList.map((fx, i) => ({
-  ...fx,
-  baseAngle: (i / effectsList.length) * Math.PI * 2,
-  dx: 0,
-  dy: 0
-}))
+const selectedIndex = ref(0)
 
-let raf = null
-let slowAngle = 0
-let radius = 0
-let cardSize = 150
-const CARD_GAP = 10 // 相邻卡片最小间距
-
-function layout() {
-  const el = orbitRef.value
-  if (!el) return
-  const w = el.clientWidth
-  const h = el.clientHeight
-  const count = cards.length
-
-  const MAX_CARD = 150
-  const MIN_CARD = w < 560 ? 64 : w < 860 ? 76 : 90
-
-  let r = Math.min(w, h) * 0.34
-  let size = (2 * Math.PI * r) / count - CARD_GAP
-
-  if (size < MIN_CARD) {
-    const needR = (count * (MIN_CARD + CARD_GAP)) / (2 * Math.PI)
-    const maxR = Math.min(w, h) / 2 - MIN_CARD / 2
-    r = Math.min(needR, maxR)
-    size = (2 * Math.PI * r) / count - CARD_GAP
-    if (size < MIN_CARD) size = MIN_CARD
-  }
-
-  if (size > MAX_CARD) size = MAX_CARD
-  radius = r
-  cardSize = size
-
-  cards.forEach((c) => {
-    const card = c.el
-    if (card) {
-      // 内容自适应宽度，无需强设
-    }
-  })
+function ringDist(i) {
+  const n = effectsList.length
+  const d = Math.abs(i - selectedIndex.value)
+  return Math.min(d, n - d)
 }
 
-function frame() {
-  slowAngle += 0.0012
-  cards.forEach((c) => {
-    const card = c.el
-    if (!card) return
-    const angle = c.baseAngle + slowAngle
-    const targetX = Math.cos(angle) * radius
-    const targetY = Math.sin(angle) * radius
-    c.dx += (targetX - c.dx) * 0.08
-    c.dy += (targetY - c.dy) * 0.08
-    card.style.transform = `translate(calc(-50% + ${c.dx}px), calc(-50% + ${c.dy}px))`
-  })
-  raf = requestAnimationFrame(frame)
-}
-
-function onSelect(i) {
+function go(i) {
   selectedIndex.value = i
 }
 
-function setCardEl(i, el) {
-  cards[i].el = el
+function step(d) {
+  const n = effectsList.length
+  selectedIndex.value = (selectedIndex.value + d + n) % n
 }
 
-onMounted(() => {
-  layout()
-  window.addEventListener('resize', layout)
-  raf = requestAnimationFrame(frame)
-})
+function onKeydown(e) {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return
+  if (e.key === 'ArrowLeft') step(-1)
+  else if (e.key === 'ArrowRight') step(1)
+}
 
-onBeforeUnmount(() => {
-  cancelAnimationFrame(raf)
-  window.removeEventListener('resize', layout)
-})
+onMounted(() => document.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
   <div class="page">
     <header class="fx-orbit-hero">
       <h1 class="fx-orbit-title">特效 <span class="fx-orbit-accent">陈列室</span></h1>
-      <p class="fx-orbit-sub">点击轨道上的名称，在中心舞台查看效果 —— 效果是主角</p>
+      <p class="fx-orbit-sub">点击卡片或 ← → 循环切换，效果是主角</p>
     </header>
 
-    <div ref="orbitRef" class="fx-orbit">
-      <!-- 中心舞台：矩形展示区 -->
-      <div class="fx-stage" :key="selectedIndex">
-        <div class="fx-stage-head">
-          <span class="fx-kind">{{ KIND_LABEL[cards[selectedIndex].kind] }}</span>
-          <h2 class="fx-stage-title">{{ cards[selectedIndex].title }}</h2>
-          <span class="fx-num">{{ String(selectedIndex + 1).padStart(2, '0') }} / {{ String(cards.length).padStart(2, '0') }}</span>
-        </div>
-        <div class="fx-stage-body">
-          <component :is="cards[selectedIndex].component" />
-        </div>
-        <p class="fx-stage-sub">{{ cards[selectedIndex].sub }}</p>
+    <!-- 中心舞台：矩形展示区 -->
+    <div class="fx-stage" :key="selectedIndex">
+      <div class="fx-stage-head">
+        <span class="fx-kind">{{ KIND_LABEL[effectsList[selectedIndex].kind] }}</span>
+        <h2 class="fx-stage-title">{{ effectsList[selectedIndex].title }}</h2>
+        <span class="fx-num">{{ String(selectedIndex + 1).padStart(2, '0') }} / {{ String(effectsList.length).padStart(2, '0') }}</span>
       </div>
+      <div class="fx-stage-body">
+        <component :is="effectsList[selectedIndex].component" />
+      </div>
+      <p class="fx-stage-sub">{{ effectsList[selectedIndex].sub }}</p>
+    </div>
 
-      <!-- 轨道文字卡片 -->
-      <section
-        v-for="(fx, i) in cards"
-        :key="fx.title"
-        :ref="(el) => setCardEl(i, el)"
-        class="fx-orbit-card"
-        :class="{ selected: i === selectedIndex }"
-        @click="onSelect(i)"
-      >
-        <span class="fx-orbit-card-dot"></span>
-        <span class="fx-orbit-card-num">{{ String(i + 1).padStart(2, '0') }}</span>
-        <span class="fx-orbit-card-title">{{ fx.title }}</span>
-        <span class="fx-orbit-card-sub">{{ fx.sub }}</span>
-      </section>
+    <!-- 3D 阶梯轮播：近大远小，循环切换 -->
+    <div class="fx-carousel">
+      <button class="fx-car-nav" aria-label="上一个特效" @click="step(-1)">‹</button>
+      <div class="fx-car-track">
+        <button
+          v-for="(fx, i) in effectsList"
+          :key="fx.title"
+          class="fx-car-card"
+          :class="[`d${Math.min(ringDist(i), 3)}`, { selected: i === selectedIndex }]"
+          @click="go(i)"
+        >
+          <span class="fx-car-kind">{{ KIND_LABEL[fx.kind] }} · {{ String(i + 1).padStart(2, '0') }}</span>
+          <span class="fx-car-title">{{ fx.title }}</span>
+          <span class="fx-car-sub">{{ fx.sub }}</span>
+        </button>
+      </div>
+      <button class="fx-car-nav" aria-label="下一个特效" @click="step(1)">›</button>
     </div>
 
     <p class="fx-orbit-hint">全局特效设置请点右上角 ⚙</p>

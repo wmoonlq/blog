@@ -43,12 +43,6 @@ const router = createRouter({
       meta: { title: '特效' }
     },
     {
-      path: '/tags',
-      name: 'tags',
-      component: () => import('./views/TagsView.vue'),
-      meta: { title: '标签' }
-    },
-    {
       path: '/timeline',
       name: 'timeline',
       component: () => import('./views/TimelineView.vue'),
