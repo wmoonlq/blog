@@ -5765,3 +5765,55 @@ mark {
 .nav-search:hover svg {
   transform: scale(1.08);
 }
+
+/* ============================================================
+   编辑器工具栏 2026-09-03 — 导入 .md
+   ============================================================ */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ============================================================
+   歌词面板背景 — 专辑海报 + 切歌 crossfade
+   ============================================================ */
+.mp-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.mp-panel-bg {
+  position: absolute;
+  inset: -40px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(26px) saturate(1.15);
+  transform: scale(1.1);
+  pointer-events: none;
+}
+
+.mp-panel-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0.62;
+  pointer-events: none;
+  transition: background var(--transition);
+}
+
+.mp-panel > :not(.mp-panel-bg):not(.mp-panel-veil) {
+  position: relative;
+  z-index: 1;
+}
+
+.panel-bg-fade-enter-active,
+.panel-bg-fade-leave-active {
+  transition: opacity 0.9s ease;
+}
+
+.panel-bg-fade-enter-from,
+.panel-bg-fade-leave-to {
+  opacity: 0;
+}

@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMediaQuery } from '../utils/media'
+import { settings } from '../stores/settings'
 import SettingsPanel from './SettingsPanel.vue'
 
 const open = ref(false)
@@ -51,7 +52,7 @@ function openSettings() {
 </script>
 
 <template>
-  <header class="nav">
+  <header class="nav" :class="{ 'nav-has-bg': settings.navBackground }" :style="settings.navBackground ? { '--nav-bg-image': `url(${settings.navBackground})` } : null">
     <div class="nav-inner">
       <router-link class="nav-brand" :to="{ name: 'home' }" @click="close">wmoonlq · Blog</router-link>
       <nav v-if="isWide" class="nav-links">

@@ -40,6 +40,31 @@ const wordCount = computed(() => {
 })
 
 const editMode = ref('split') // 'edit' | 'preview' | 'split'
+const fileInput = ref(null)
+
+function pickImport(e) {
+  const f = e.target.files[0]
+  e.target.value = ''
+  if (!f) return
+  if (form.content.trim() && !window.confirm('导入将覆盖当前编辑内容，继续？')) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const { data: meta, content } = parseFrontmatter(String(reader.result))
+    const base = f.name.replace(/\.md$/i, '')
+    form.filename = base
+    form.title = meta.title || base.replace(/-/g, ' ')
+    form.date = meta.date || new Date().toISOString().slice(0, 10)
+    form.tags = Array.isArray(meta.tags) ? meta.tags.join(', ') : meta.tags ? String(meta.tags) : ''
+    form.content = content
+    editingSha.value = null
+    message.value = `已导入 ${f.name}`
+  }
+  reader.readAsText(f, 'utf-8')
+}
+
+function openImport() {
+  fileInput.value && fileInput.value.click()
+}
 
 const hasDraft = ref(false)
 
@@ -297,6 +322,16 @@ watch(connStatus, (s) => {
 
 <template>
   <section class="editor-card">
+    <div class="editor-toolbar">
+      <button class="btn btn-sm" @click="openImport">导入 .md 文件</button>
+      <input
+        ref="fileInput"
+        type="file"
+        accept=".md,text/markdown"
+        hidden
+        @change="pickImport"
+      />
+    </div>
     <div class="field">
       <label class="field-label">{{ isPosts ? '标题' : '标题（可选）' }}</label>
       <input v-model="form.title" class="input" placeholder="标题" />

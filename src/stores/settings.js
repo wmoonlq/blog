@@ -16,7 +16,8 @@ export const settings = reactive({
   theme: saved.theme || 'light',
   fontSize: saved.fontSize || 16,
   notes: Array.isArray(saved.notes) ? saved.notes : [],
-  background: saved.background || ''
+  background: saved.background || '',
+  navBackground: saved.navBackground || ''
 })
 
 watch(
@@ -41,6 +42,10 @@ export function toggleTheme() {
 
 export function setBackground(url) {
   settings.background = url
+}
+
+export function setNavBackground(url) {
+  settings.navBackground = url
 }
 
 export function setFontSize(size) {

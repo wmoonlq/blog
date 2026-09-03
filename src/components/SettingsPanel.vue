@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { settings, toggleTheme, setBackground } from '../stores/settings'
+import { settings, toggleTheme, setBackground, setNavBackground } from '../stores/settings'
 import { effects, toggleParticleTrail } from '../stores/effects'
 import { user, setNickname } from '../stores/user'
 import { checkPassword, getToken, fileToBase64Worker, terminateWorker, uploadFileXhr } from '../utils/githubFiles'
@@ -8,6 +8,7 @@ import { checkPassword, getToken, fileToBase64Worker, terminateWorker, uploadFil
 const open = ref(false)
 const page = ref('') // '' | 'appearance' | 'background' | 'effects' | 'profile'
 const bgInput = ref(settings.background)
+const navBgInput = ref(settings.navBackground)
 
 const pwd = ref('')
 const bgFile = ref(null)
@@ -21,6 +22,7 @@ function openPanel() {
   open.value = true
   page.value = ''
   bgInput.value = settings.background
+  navBgInput.value = settings.navBackground
 }
 
 function closePanel() {
@@ -48,6 +50,15 @@ function applyBackground() {
 function clearBackground() {
   bgInput.value = ''
   setBackground('')
+}
+
+function applyNavBackground() {
+  setNavBackground(navBgInput.value.trim())
+}
+
+function clearNavBackground() {
+  navBgInput.value = ''
+  setNavBackground('')
 }
 
 function onKeydown(e) {
@@ -164,7 +175,7 @@ async function uploadBg() {
           </button>
           <button class="settings-item" @click="goPage('background')">
             <span class="settings-item-name">背景图片</span>
-            <span class="settings-item-desc">{{ settings.background ? '已设置' : '未设置' }}</span>
+            <span class="settings-item-desc">{{ settings.background ? '全站已设置' : '全站未设置' }} · {{ settings.navBackground ? '导航已设置' : '导航未设置' }}</span>
             <span class="settings-item-arrow">›</span>
           </button>
           <button class="settings-item" @click="goPage('effects')">
@@ -230,6 +241,20 @@ async function uploadBg() {
               <p class="upload-progress-label">{{ phase === 'read' ? '后台读取' : '上传中' }} {{ progress.toFixed(0) }}%</p>
             </div>
             <p v-if="uploadMsg" class="editor-msg">{{ uploadMsg }}</p>
+            <div class="settings-sep"></div>
+            <h3 class="settings-sec-title">导航栏背景图</h3>
+            <p class="settings-hint">仅导航栏区域，可复用上方上传的图片 URL</p>
+            <div class="bg-input-row">
+              <input
+                v-model="navBgInput"
+                class="input"
+                type="url"
+                placeholder="图片 URL（https://…）"
+                @keydown.enter="applyNavBackground"
+              />
+              <button class="btn btn-sm" @click="applyNavBackground">应用</button>
+              <button v-if="settings.navBackground" class="btn btn-sm" @click="clearNavBackground">清除</button>
+            </div>
           </section>
         </div>
 

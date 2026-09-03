@@ -455,6 +455,16 @@ function toggleInPl(pid) {
 
     <!-- 内容面板：歌词 / 播放列表 -->
     <div class="mp-panel">
+      <transition name="panel-bg-fade">
+        <div
+          v-if="track && track.cover"
+          :key="track.slug"
+          class="mp-panel-bg"
+          :style="{ backgroundImage: `url(${track.cover})` }"
+        ></div>
+      </transition>
+      <div class="mp-panel-veil"></div>
+
       <div class="mp-tabs">
         <button class="mp-tab" :class="{ on: panel === 'lyric' }" @click="panel = 'lyric'">歌词</button>
         <button class="mp-tab" :class="{ on: panel === 'list' }" @click="panel = 'list'">
