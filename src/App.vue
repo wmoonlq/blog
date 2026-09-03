@@ -1,18 +1,19 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import BlogNav from './components/BlogNav.vue'
-import GlobalParticleTrail from './components/GlobalParticleTrail.vue'
-import ScrollProgress from './components/ScrollProgress.vue'
-import BackToTop from './components/BackToTop.vue'
-import SearchModal from './components/SearchModal.vue'
-import BgImage from './components/BgImage.vue'
-import MiniPlayer from './components/MiniPlayer.vue'
 import { effects } from './stores/effects'
 import { getAllPosts } from './utils/posts'
 import { getAllNotes } from './utils/notes'
 import { music, bindAudio, onEnded, setVolume, setTracks } from './stores/music'
 import { getAllMusic } from './utils/music'
+
+const GlobalParticleTrail = defineAsyncComponent(() => import('./components/GlobalParticleTrail.vue'))
+const ScrollProgress = defineAsyncComponent(() => import('./components/ScrollProgress.vue'))
+const BackToTop = defineAsyncComponent(() => import('./components/BackToTop.vue'))
+const SearchModal = defineAsyncComponent(() => import('./components/SearchModal.vue'))
+const BgImage = defineAsyncComponent(() => import('./components/BgImage.vue'))
+const MiniPlayer = defineAsyncComponent(() => import('./components/MiniPlayer.vue'))
 
 const router = useRouter()
 const postCount = computed(() => getAllPosts().length)
@@ -20,14 +21,6 @@ const noteCount = computed(() => getAllNotes().length)
 
 // 全局初始化曲库（供跨页面播放）
 setTracks(getAllMusic())
-
-function onAudioTime() {
-  music.current = audioEl.currentTime
-}
-
-function onAudioMeta() {
-  music.duration = audioEl.duration
-}
 
 let audioEl = null
 
@@ -52,7 +45,20 @@ onBeforeUnmount(() => bindAudio(null))
   <main>
     <router-view v-slot="{ Component }">
       <transition name="page" mode="out-in">
-        <component :is="Component" />
+        <Suspense :timeout="0">
+          <component :is="Component" />
+          <template #fallback>
+            <div class="page route-skeleton" aria-hidden="true">
+              <div class="skeleton-hero">
+                <div class="skeleton-line skeleton-title"></div>
+                <div class="skeleton-line skeleton-sub"></div>
+              </div>
+              <div class="skeleton-block"></div>
+              <div class="skeleton-block"></div>
+              <div class="skeleton-block"></div>
+            </div>
+          </template>
+        </Suspense>
       </transition>
     </router-view>
   </main>

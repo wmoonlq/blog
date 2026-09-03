@@ -23,6 +23,8 @@ watch(
   () => settings.theme,
   (v) => {
     document.documentElement.dataset.theme = v
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.content = v === 'dark' ? '#1C1916' : '#FBF9F6'
   },
   { immediate: true }
 )

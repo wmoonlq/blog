@@ -14,17 +14,47 @@ const inputRef = ref(null)
 const posts = getAllPosts()
 const notes = getAllNotes()
 
+function escapeHtml(s) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function highlight(text, q) {
+  const escaped = escapeHtml(text)
+  if (!q) return escaped
+  const pattern = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  try {
+    return escaped.replace(new RegExp(`(${pattern})`, 'gi'), '<mark>$1</mark>')
+  } catch {
+    return escaped
+  }
+}
+
 const index = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return []
   const hit = (text) => text.toLowerCase().includes(q)
+  const score = (p) => {
+    let s = 0
+    if (p.title.toLowerCase().includes(q)) s += 100
+    if (p.title.toLowerCase().startsWith(q)) s += 50
+    if ((p.tags || []).join(' ').toLowerCase().includes(q)) s += 40
+    if (hit(stripMarkdown(p.content))) s += 10
+    return s
+  }
   const postResults = posts
-    .filter((p) => hit(p.title) || hit(p.tags.join(' ')) || hit(stripMarkdown(p.content)))
-    .map((p) => ({ kind: 'post', ...p }))
+    .filter((p) => hit(p.title) || hit((p.tags || []).join(' ')) || hit(stripMarkdown(p.content)))
+    .map((p) => ({ kind: 'post', score: score(p), ...p }))
   const noteResults = notes
     .filter((n) => hit(n.title || '') || hit(stripMarkdown(n.content)))
-    .map((n) => ({ kind: 'note', ...n }))
-  return [...postResults, ...noteResults].slice(0, 12)
+    .map((n) => ({ kind: 'note', score: score(n), ...n }))
+  return [...postResults, ...noteResults]
+    .sort((a, b) => b.score - a.score || (a.date < b.date ? 1 : -1))
+    .slice(0, 12)
 })
 
 const active = computed(() => index.value[selected.value] || null)
@@ -125,13 +155,8 @@ onBeforeUnmount(() => {
           >
             <span class="search-item-kind">{{ item.kind === 'post' ? '文' : '笔' }}</span>
             <div class="search-item-main">
-              <div class="search-item-title">
-                <span v-if="item.kind === 'post'">{{ item.title }}</span>
-                <span v-else>{{ item.title || '随笔' }}</span>
-              </div>
-              <div v-if="item.kind === 'note'" class="search-item-excerpt">
-                {{ stripMarkdown(item.content).slice(0, 48) }}
-              </div>
+              <div class="search-item-title" v-html="highlight(item.title || '随笔', query)"></div>
+              <div class="search-item-excerpt" v-html="highlight(stripMarkdown(item.content).slice(0, 48), query)"></div>
             </div>
             <time class="search-item-date">{{ relativeTime(item.date) }}</time>
           </div>

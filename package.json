@@ -10,6 +10,7 @@
     "bridge": "node local-bridge/bridge.js"
   },
   "dependencies": {
+    "highlight.js": "^11.12.0",
     "marked": "^15.0.6",
     "three": "^0.185.1",
     "vue": "^3.5.13",

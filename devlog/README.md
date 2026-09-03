@@ -19,6 +19,7 @@
 - [2026-08-19 命令行桥接本机 shell](#2026-08-19-命令行桥接本机-shell)
 - [2026-08-19 桥接升级 WebSocket 持久会话（参考 DSH）](#2026-08-19-桥接升级-websocket-持久会话参考-dsh)
 - [2026-09-03 引入 Spec Kit 规格驱动开发](#2026-09-03-引入-spec-kit-规格驱动开发)
+- [2026-09-03 全站体验优化：性能 · SEO · UI · 阅读 · 功能](#2026-09-03-全站体验优化性能--seo--ui--阅读--功能)
 
 ---
 
@@ -724,5 +725,54 @@
 - 宪法是命令的约束来源：`/speckit.plan` 会按宪法校验合规，因此宪法内容对齐 AGENTS.md 既有约定
 - 分工：小改动继续 `/devloop`；大功能先用 `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` 产出 `specs/<分支>/` 三件套，再交 blog-dev 实现
 - 待办：`/speckit.constitution` 命令实际执行时与手填宪法的一致性核验；是否需要 `.specify/` 进 .gitignore（目前整目录提交，便于跨机器复用）
+
+---
+
+## 2026-09-03 全站体验优化：性能 · SEO · UI · 阅读 · 功能
+
+### 背景
+
+用户提出按一线大厂产品体验六维迭代（性能 / UI / 交互 / 阅读 / 功能 / SEO），要求最小改动、保留技术栈与构建流程。本次为第一轮全量优化。
+
+### 功能迭代清单
+
+| 维度 | 改动 |
+|---|---|
+| 性能 | App.vue 六个全局组件全部 `defineAsyncComponent`（BgImage/ScrollProgress/BackToTop/SearchModal/MiniPlayer/GlobalParticleTrail），各自独立 chunk；路由切换加 `<Suspense>` 骨架屏 |
+| SEO | index.html 补 description/keywords/author/OG/Twitter/canonical/theme-color（随主题切换）；新增 `public/favicon.svg`、`robots.txt`、`sitemap.xml`；router.js afterEach 动态 `document.title`（文章页取真实标题） |
+| 阅读 | markdown.js 接入 highlight.js 11（core + 10 语言，仅懒加载路由 chunk 34.96KB gzip）；图片 `loading="lazy" decoding="async"`；外链自动新窗口；PostView 加分享（Web Share API + 复制回退）、正文图点击大图预览（lightbox）、≤1080px 目录折叠按钮；锚点 `scroll-margin-top: 88px` 避让 sticky 导航 |
+| 功能 | SearchModal 关键词 `<mark>` 高亮 + 标题命中优先排序 + 文章摘要；TagsView hero 显示文章总数、无标签空态；GiscusComments 组件挂载文章页（specific mapping + term=slug 适配 hash 路由） |
+| UI/交互 | design.css 追加：骨架屏、hljs 亮/暗 token 配色、lightbox、点击反馈 scale(0.97)、prose img hover、表格窄屏横向滚动、600px 以下标题/留白缩放 |
+
+### 踩坑记录
+
+#### 1. Giscus 的 hash 路由映射
+
+- **现象**：博客用 hash 路由，giscus 默认 `pathname` mapping 会把所有文章映射到同一条 discussion
+- **解决**：`data-mapping="specific"` + `data-term=slug`；slug 变化时向 iframe `postMessage({ giscus: { setConfig: { term } } })`
+- **待办**：仓库 `has_discussions=false`，category-id 拿不到，组件暂不渲染；用户启用 Discussions 后 API 查询补 `CATEGORY_ID` 即生效
+
+#### 2. highlight.js 不能进首屏
+
+- hljs core + 语言注册 ~70KB，若在 `main.js` 静态 import 会拖慢首屏；markdown.js 只在懒加载路由（PostView/NotesView/VideosView/编辑器）使用，跟随路由 chunk 自动拆分，首屏零成本
+- 语言注册做别名（js→javascript、sh→shell、vue→xml），避免文章里写 `js` 无高亮
+
+#### 3. 骨架屏要"无渐变"
+
+- 设计系统禁渐变，常见的 shimmer 扫光骨架屏不符合；改用纯色块 `opacity` 呼吸动画（`skeleton-pulse`），语义等价、样式合规
+
+#### 4. Suspense fallback 只在首次下载 chunk 时出现
+
+- 本地 preview 下路由 chunk 秒开，骨架屏几乎不可见；真实弱网/GitHub Pages 下首次进入各页面会有体验收益
+
+#### 5. PowerShell 追加 UTF-8 无 BOM
+
+- `Add-Content -Encoding UTF8` 在 PS 5.1 追加到已存在文件时不写 BOM（验证文件头 `2F 2A 20`），CSS 追加安全
+
+### 架构要点
+
+- 首屏 index chunk 145KB（gzip 55.9KB），未引入新依赖进首屏；three.js 特效页仍独立 546KB 懒加载
+- 代码高亮 token 配色走暖色系（keyword 深棕 / string 暖绿 / number 橙 / title 蓝灰），亮暗两套 `:root[data-theme]` 覆盖，与设计 tokens 风格统一
+- 待办：Giscus 启用后填 CATEGORY_ID；sitemap 每新增文章/笔记需手写同步
 
 ---

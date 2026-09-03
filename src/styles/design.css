@@ -5339,3 +5339,306 @@ img {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   全站体验增强 2026-09-03 — 骨架屏 / 代码高亮 / 预览大图 /
+   点击反馈 / 目录折叠 / 搜索高亮 / 评论区 / 移动端微调
+   ============================================================ */
+
+/* --- 路由切换骨架屏（纯色块 + 呼吸，无渐变） --- */
+.route-skeleton {
+  padding-top: 88px;
+  padding-bottom: 48px;
+}
+
+.skeleton-hero {
+  margin-bottom: 48px;
+}
+
+.skeleton-line {
+  border-radius: 6px;
+  background: var(--hover-bg);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 45%;
+  height: 38px;
+}
+
+.skeleton-sub {
+  width: 60%;
+  height: 15px;
+  margin-top: 18px;
+}
+
+.skeleton-block {
+  height: 116px;
+  border-radius: var(--radius);
+  background: var(--hover-bg);
+  margin-bottom: 20px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* --- 搜索关键词高亮 --- */
+mark {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* --- 代码语法高亮 token（暖色系，跟随主题） --- */
+.prose pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  background: none;
+  padding: 0;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #8a7f75;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-type,
+.hljs-tag {
+  color: #9a6b4f;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition {
+  color: #5f7d5c;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+  color: #a8643a;
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section,
+.hljs-name {
+  color: #4f6f8f;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-selector-attr,
+.hljs-params {
+  color: #6b5d8f;
+}
+
+.hljs-built_in {
+  color: #6b6f5a;
+}
+
+.hljs-meta {
+  color: #8a7f75;
+}
+
+.hljs-deletion {
+  color: #b3593f;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .hljs-comment,
+:root[data-theme="dark"] .hljs-quote,
+:root[data-theme="dark"] .hljs-meta {
+  color: #8f8478;
+}
+
+:root[data-theme="dark"] .hljs-keyword,
+:root[data-theme="dark"] .hljs-selector-tag,
+:root[data-theme="dark"] .hljs-type,
+:root[data-theme="dark"] .hljs-tag {
+  color: #d8a88a;
+}
+
+:root[data-theme="dark"] .hljs-string,
+:root[data-theme="dark"] .hljs-regexp,
+:root[data-theme="dark"] .hljs-addition {
+  color: #a3c49f;
+}
+
+:root[data-theme="dark"] .hljs-number,
+:root[data-theme="dark"] .hljs-literal,
+:root[data-theme="dark"] .hljs-symbol,
+:root[data-theme="dark"] .hljs-bullet {
+  color: #e0a06b;
+}
+
+:root[data-theme="dark"] .hljs-title,
+:root[data-theme="dark"] .hljs-title.function_,
+:root[data-theme="dark"] .hljs-section,
+:root[data-theme="dark"] .hljs-name {
+  color: #8fb0d0;
+}
+
+:root[data-theme="dark"] .hljs-attr,
+:root[data-theme="dark"] .hljs-attribute,
+:root[data-theme="dark"] .hljs-variable,
+:root[data-theme="dark"] .hljs-template-variable,
+:root[data-theme="dark"] .hljs-selector-attr,
+:root[data-theme="dark"] .hljs-params {
+  color: #b0a1d8;
+}
+
+:root[data-theme="dark"] .hljs-built_in {
+  color: #a9ad8f;
+}
+
+:root[data-theme="dark"] .hljs-deletion {
+  color: #d87a5a;
+}
+
+/* --- 文章大图预览 --- */
+.prose img {
+  transition: box-shadow var(--transition), transform var(--transition);
+  cursor: zoom-in;
+}
+
+@media (hover: hover) {
+  .prose img:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  cursor: zoom-out;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-close:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.lightbox-fade-enter-active,
+.lightbox-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.lightbox-fade-enter-from,
+.lightbox-fade-leave-to {
+  opacity: 0;
+}
+
+/* --- 锚点滚动避让 sticky 导航 --- */
+.prose h2[id],
+.prose h3[id] {
+  scroll-margin-top: 88px;
+}
+
+/* --- 移动端目录折叠按钮 --- */
+.toc-toggle {
+  width: 100%;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.toc-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* --- 评论区 --- */
+.giscus-wrap {
+  padding-top: 8px;
+}
+
+/* --- 全局点击反馈 --- */
+.btn:active,
+.chip:active,
+.nav-search:active,
+.nav-toggle:active,
+.readsize-btn:active,
+.copy-link:active,
+.edit-link:active,
+.toc-toggle:active,
+.pager-item:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 0 16px;
+  }
+
+  .hero {
+    padding: 56px 0 40px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .article-title {
+    font-size: 26px;
+  }
+
+  .prose table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

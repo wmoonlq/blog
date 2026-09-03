@@ -71,6 +71,16 @@
 - 升级 CLI：`specify self check` / `specify self upgrade`；本项目从 PyPI 装 `specify-cli`（非 git 版本）
 - 与既有 devloop 的关系：小改动继续走 `/devloop`；较大功能需求可先用 speckit 流程产出 spec/plan/tasks，再交 blog-dev 实现
 
+## 全站体验与 SEO（2026-09-03 起）
+
+- Markdown 渲染（`src/utils/markdown.js`）：marked + highlight.js 代码高亮（`hljs` class，亮/暗两套 token 色在 design.css）、图片 `loading="lazy" decoding="async"`、外链自动 `target="_blank" rel="noopener"`；该模块只在懒加载路由使用，不影响首屏
+- 首屏优化：App.vue 全部非核心组件 `defineAsyncComponent` 异步加载；路由切换用 `<Suspense>` 骨架屏（`.route-skeleton`，纯色块呼吸动画，无渐变）
+- SEO：`index.html` 含 description/keywords/OG/Twitter/canonical/theme-color（随主题切换，settings.js）；`public/` 下有 `favicon.svg`、`robots.txt`、`sitemap.xml`（手写维护，新增文章/笔记后同步更新）
+- 动态标题：`router.js` afterEach 按路由 meta 设置 `document.title`（文章页取 post title）
+- 文章页（PostView.vue）：分享按钮（Web Share API，桌面回退复制链接）、正文图片点击预览大图（`.lightbox`，Esc/点击关闭）、≤1080px 目录折叠为按钮（`.toc-toggle`）
+- 搜索（SearchModal.vue）：关键词 `<mark>` 高亮 + 标题/标签命中优先排序 + 文章也显示摘要
+- 评论：`src/components/GiscusComments.vue` 已挂载于文章页，`data-mapping="specific"` + `term=slug`（适配 hash 路由）；**待办**：需用户在 GitHub 仓库启用 Discussions 后，把真实 `CATEGORY_ID`（API 查询 `GET /repos/wmoonlq/blog/discussions/categories`）填入组件，评论区即生效（repo-id=`R_kgDOT2U2qw`）
+
 ## 内容与媒体模块速查
 
 | 模块 | 元数据目录 | 文件目录 | 说明 |
