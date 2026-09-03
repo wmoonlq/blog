@@ -5729,7 +5729,7 @@ mark {
   inset: -40px;
   background-size: cover;
   background-position: center;
-  filter: blur(26px) saturate(1.15);
+  filter: blur(14px) saturate(1.2);
   transform: scale(1.1);
   pointer-events: none;
 }
@@ -5738,7 +5738,7 @@ mark {
   position: absolute;
   inset: 0;
   background: var(--bg);
-  opacity: 0.62;
+  opacity: 0.35;
   pointer-events: none;
   transition: background var(--transition);
 }
