@@ -1,5 +1,5 @@
 {
-  "categories": ["动画", "自然", "教程"],
+  "categories": ["教程", "记录", "样片"],
   "collections": [
     { "id": "blender", "name": "Blender 开源动画", "description": "Blender 官方开源动画样片", "sort": 0 },
     { "id": "mdn", "name": "MDN 样片", "description": "来自 MDN 的 CC0 示例视频", "sort": 1 },

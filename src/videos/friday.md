@@ -3,7 +3,7 @@ title: "周五"
 date: "2026-08-14"
 source: "/blog/videos/friday.mp4"
 type: "video"
-category: "自然"
+category: "样片"
 collections: ["mdn"]
 ---
 

@@ -852,3 +852,32 @@
 - 导航图标为装饰性（`aria-hidden`），链接语义由文字承载
 
 ---
+
+## 2026-09-08 内容架构收敛：8 入口 → 5 入口
+
+### 背景
+
+用户反馈博客内容太杂。盘点后定位三处错位：定位错位（工具/聚合页占导航 1/4）、内容错位（家长会纪要进文章、随笔空置、测试样片与教程混放）、导航过载（8 个一级入口）。
+
+### 功能迭代清单
+
+- **内容归位**：`src/posts/家长会会议纪要.md` → `src/notes/parent-meeting.md`（随笔 frontmatter 仅 date+title）；`design-restraint` 标签 `["随笔","设计"]` → `["设计"]`（类型词不再当标签）
+- **视频分区重构**：`video-meta.json` categories `["动画","自然","教程"]` → `["教程","记录","样片"]`；4 个测试样片（bigbuckbunny/movie/flower/friday）归「样片」、录屏 video-1786814501358 补 `category: "记录"`、juc 教程保持「教程」
+- **导航收敛**：BlogNav 8 项 → 5 项（文章/随笔/视频/音乐/关于），时间线/工作台/特效移出导航，路由保留可直达
+- **工具入口**：AboutView 新增「工具箱」卡片，链接工作台与特效页
+- **SEO 同步**：sitemap 删除无效旧 URL `#/notes/2026-08-12-123`，修正两个 post lastmod 日期
+
+### 踩坑记录
+
+#### 1. Edit 工具偶发写入失败
+
+- 本轮多次 Edit 报 "Native execution failed"，同路径部分文件成功部分失败（无只读/锁定迹象），换 Write 全量重写后稳定。结论：遇到 Edit 失败优先切换 Write，不反复重试
+
+#### 2. 视频分类由元数据单一驱动
+
+- VideosView 分类 chips 完全读 `video-meta.json.categories` + 各 md `category` 字段，UI 无硬编码，改元数据即全局生效；collections 不动不影响集合视图
+
+### 架构要点
+
+- 内容分三层：原创（文章/随笔）· 收藏（视频/音乐）· 工具（工作台/特效，导航外，可直达）
+- 随笔 slug=文件名，迁移即换 URL；随笔无详情页，sitemap 无需逐篇登记

@@ -78,6 +78,15 @@ const tech = ['Vite', 'Vue 3', 'Vue Router', 'Marked', 'GitHub Pages', 'Design T
       </section>
 
       <section class="about-card">
+        <h2 class="about-title">工具箱</h2>
+        <p class="about-text">
+          小工具集散地：番茄钟、密码生成、骰子、贪吃蛇等，另有粒子特效页。<br />
+          <a href="#/workbench" class="about-link">进入工作台</a> ·
+          <a href="#/workbench/effects" class="about-link">特效页</a>
+        </p>
+      </section>
+
+      <section class="about-card">
         <h2 class="about-title">使用指南</h2>
         <p class="about-text">
           按 <b>Ctrl / Cmd + K</b> 或 <b>/</b> 唤起全站搜索；<br />
