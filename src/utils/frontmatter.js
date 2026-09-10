@@ -9,10 +9,10 @@ export function parseFrontmatter(raw) {
     const key = m[1]
     let value = m[2].trim()
     if (value.startsWith('[') && value.endsWith(']')) {
-      value = value
-        .slice(1, -1)
-        .split(',')
-        .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+      const inner = value.slice(1, -1).trim()
+      value = inner === ''
+        ? []
+        : inner.split(',').map((s) => s.trim().replace(/^["']|["']$/g, ''))
     } else {
       value = value.replace(/^["']|["']$/g, '')
     }

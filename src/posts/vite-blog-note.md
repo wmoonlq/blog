@@ -1,7 +1,10 @@
 ---
 title: "从零搭建 Vite + Vue3 静态博客"
 date: "2026-08-12"
-tags: ["Vue", "Vite", "前端"]
+tags: ["Vue", "Vite"]
+category: "前端"
+cover: "bg/bg-1786809364416.png"
+pinned: true
 ---
 
 Vite 以极快的冷启动和按需编译著称。本文记录这套博客的搭建思路：原生 Vite + Vue3，无构建期插件，文章在浏览器端解析，任何静态托管平台都能直接部署。
