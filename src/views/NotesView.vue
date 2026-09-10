@@ -157,7 +157,7 @@ async function confirmAction() {
   }
   const token = getToken()
   if (!token) {
-    actMsg.value = '需要 GitHub Token（与随笔编辑器共用，可在编辑器高级选项填写）'
+    actMsg.value = '需要 GitHub Token：请在浏览器控制台执行 localStorage.setItem(\'notes-token\', \'你的PAT\') 后重试'
     return
   }
   const { type, slug, title } = action.value
@@ -212,7 +212,6 @@ async function confirmAction() {
       :sub="`随手记下的碎片 · ${notes.length} 篇`"
     >
       <template #actions>
-        <router-link class="btn hero-btn" :to="{ name: 'notes-editor' }">写随笔</router-link>
         <button class="btn hero-btn" :class="{ 'btn-on': showTrash }" @click="showTrash = !showTrash">
           {{ showTrash ? '收起回收站' : '回收站' }}<span v-if="trashedNotes.length" class="hero-btn-count">{{ trashedNotes.length }}</span>
         </button>
@@ -258,10 +257,6 @@ async function confirmAction() {
               <div class="note-head">
                 <time class="note-date">{{ note.date }}<span class="note-relative"> · {{ relativeTime(note.date) }}</span></time>
                 <span class="note-actions">
-                  <router-link
-                    class="edit-link"
-                    :to="{ name: 'notes-editor', query: { file: `${note.slug}.md` } }"
-                  >编辑</router-link>
                   <button v-if="showManage" class="btn btn-sm btn-danger note-del" @click="startDelete(note)">删除</button>
                 </span>
               </div>

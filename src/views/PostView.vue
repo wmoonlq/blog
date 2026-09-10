@@ -153,10 +153,6 @@ onBeforeUnmount(() => {
             <button class="readsize-btn" :disabled="settings.fontSize >= 20" @click="setFontSize(settings.fontSize + 1)">A+</button>
           </div>
           <button class="copy-link" @click="share">{{ linkCopied ? '已复制 ✓' : '分享' }}</button>
-          <router-link
-            class="edit-link"
-            :to="{ name: 'posts-editor', query: { file: `${post.slug}.md` } }"
-          >编辑</router-link>
         </div>
       </div>
       <header class="article-head">

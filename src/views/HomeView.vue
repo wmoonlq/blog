@@ -72,11 +72,7 @@ function toggleTag(tag) {
       title="记录与思考"
       sub="关于前端、设计与技术的随笔"
       :stats="heroStats"
-    >
-      <template #actions>
-        <router-link class="btn hero-btn" :to="{ name: 'posts-editor' }">写文章</router-link>
-      </template>
-    </PageHero>
+    />
 
     <div class="home-filter">
       <div class="search-box home-search">
@@ -132,7 +128,7 @@ function toggleTag(tag) {
 
     <EmptyState v-else
       :text="query || activeTag ? '没有找到匹配的内容' : '还没有文章'"
-      :sub="activeTag ? `换个标签试试，或清除「${activeTag}」筛选` : query ? '换个关键词试试' : '点「写文章」开始记录'"
+      :sub="activeTag ? `换个标签试试，或清除「${activeTag}」筛选` : query ? '换个关键词试试' : '在 src/posts/ 新建 Markdown 文件即可发布'"
     >
       <button v-if="query || activeTag" class="btn btn-sm" @click="query = ''; activeTag = ''">清除筛选</button>
     </EmptyState>

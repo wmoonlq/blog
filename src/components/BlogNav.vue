@@ -12,8 +12,7 @@ const isWide = useMediaQuery('(min-width: 820px)')
 const items = [
   { name: 'home', label: '文章', icon: 'M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5' },
   { name: 'notes', label: '随笔', icon: 'M17 3l4 4L8 20l-5 1 1-5L17 3z' },
-  { name: 'videos', label: '视频', icon: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM10 8.5v7l6-3.5-6-3.5z' },
-  { name: 'music', label: '音乐', icon: 'M9 18V5l10-2v13M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0z' },
+  { name: 'timeline', label: '时间线', icon: 'M12 8v4l3 3M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z' },
   { name: 'about', label: '关于', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.6-3.5 4.6-5 8-5s6.4 1.5 8 5' }
 ]
 

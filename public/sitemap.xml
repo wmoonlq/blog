@@ -16,22 +16,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://wmoonlq.github.io/blog/#/videos</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://wmoonlq.github.io/blog/#/music</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://wmoonlq.github.io/blog/#/about</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://wmoonlq.github.io/blog/#/workbench</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>

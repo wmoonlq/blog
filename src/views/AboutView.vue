@@ -78,21 +78,12 @@ const tech = ['Vite', 'Vue 3', 'Vue Router', 'Marked', 'GitHub Pages', 'Design T
       </section>
 
       <section class="about-card">
-        <h2 class="about-title">工具箱</h2>
-        <p class="about-text">
-          小工具集散地：番茄钟、密码生成、骰子、贪吃蛇等，另有粒子特效页。<br />
-          <a href="#/workbench" class="about-link">进入工作台</a> ·
-          <a href="#/workbench/effects" class="about-link">特效页</a>
-        </p>
-      </section>
-
-      <section class="about-card">
         <h2 class="about-title">使用指南</h2>
         <p class="about-text">
           按 <b>Ctrl / Cmd + K</b> 或 <b>/</b> 唤起全站搜索；<br />
-          导航栏右侧的月亮/太阳按钮切换暗色主题；<br />
+          导航栏右侧的设置按钮可切换暗色主题、设置背景图；<br />
           文章页可调节字号、复制代码块、查看目录；<br />
-          写文章与随笔：点击各页「写」按钮，填入 GitHub Token 即可在线保存并自动发布。
+          写文章与随笔：直接在仓库的 <code>src/posts/</code> 与 <code>src/notes/</code> 新建 Markdown 文件，推送即发布。
         </p>
       </section>
 
@@ -100,7 +91,6 @@ const tech = ['Vite', 'Vue 3', 'Vue Router', 'Marked', 'GitHub Pages', 'Design T
         <h2 class="about-title">版权声明</h2>
         <p class="about-text">
           本站文章与随笔为原创内容，转载或引用请注明出处。<br />
-          音乐、视频等媒体部分来自公开网络，仅作个人收藏与学习交流，版权归原作者所有，仅供试听/试看。<br />
           如您认为本站内容侵犯了您的合法权益，请在<a href="#/notes" class="about-link">随笔</a>页面留言告知，我们将在核实后第一时间处理（删除相关内容）。
         </p>
       </section>
