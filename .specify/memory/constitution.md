@@ -1,4 +1,16 @@
+<!--
+  Sync Impact Report
+  - Version: 1.0.0 (implicit) → 2.0.0
+  - Removed sections/principles: III 内容模块约定中的「视频」「音乐」约定（模块随站点收敛下线）；V 中的「媒体上传」约定（上传流程移除）
+  - Modified: III「背景图」约定（改为仅设置面板 URL 引用，无上传流程）；V「安全与凭据」（githubFiles 用途改为随笔回收站删除/还原/彻底删除）
+  - Added: 无
+  - TODO: 无
+-->
 # 个人博客 Constitution
+
+- **Version**: 2.0.0
+- **Ratification Date**: 2026-09-03
+- **Last Amended**: 2026-09-10
 
 本项目的宪法：所有 AI 驱动的开发必须遵守以下原则。这些原则是锁定的，修改需在 AGENTS.md 与 devlog 中同步记录。
 
@@ -13,10 +25,8 @@
 ### III. 内容模块约定
 - 文章：`src/posts/*.md`，frontmatter 含 title/date/tags，英文短横线命名
 - 随笔：`src/notes/*.md`，frontmatter 仅需 date（title 可选）
-- 视频：`src/videos/*.md` + `public/videos/`，分类/集合由 `src/videos/video-meta.json` 单一数据源驱动
-- 音乐：`src/music/*.md` + `public/music/`，可选 cover/lyrics(.lrc)/yrc
-- 背景图：`public/bg/`，无元数据
 - 随笔删除走回收站：`moveFile` 移入 `src/notes-trash/`，还原移回，彻底删除直接 DELETE
+- 背景图：`public/bg/`，仅由设置面板以 URL 引用（`settings.background` / `settings.navBackground`），无上传流程
 
 ### IV. 构建与发布红线
 - 本地 `npm run build` 必须零错误
@@ -25,7 +35,7 @@
 - 提交使用语义化前缀：feat:/docs:/chore:/ci:，简洁英文描述
 
 ### V. 安全与凭据
-- 媒体上传/删除走 `src/utils/githubFiles.js`，密码门禁 `123456`（仅前端防刷）
+- 随笔回收站的删除/还原/彻底删除走 `src/utils/githubFiles.js`，密码门禁 `123456`（仅前端防刷）
 - Token 复用 localStorage `notes-token`（fine-grained PAT，仅本仓库 Contents 读写）
 - 任何 Token 永不进仓库；git 已配置代理 `http://127.0.0.1:7897`（本机直连 GitHub 超时）
 
