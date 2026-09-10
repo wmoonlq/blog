@@ -1,14 +1,14 @@
 <!--
   Sync Impact Report
-  - Version: 1.0.0 (implicit) → 2.0.0
-  - Removed sections/principles: III 内容模块约定中的「视频」「音乐」约定（模块随站点收敛下线）；V 中的「媒体上传」约定（上传流程移除）
-  - Modified: III「背景图」约定（改为仅设置面板 URL 引用，无上传流程）；V「安全与凭据」（githubFiles 用途改为随笔回收站删除/还原/彻底删除）
-  - Added: 无
+  - Version: 2.0.0 → 2.0.1
+  - Added: II「首页 hero 例外」——首页允许自定义横幅（复用 .hero-title/.hero-sub/.hero-stats 全局类，不强制 PageHero）；III 文章 frontmatter 新增可选字段 cover/category/pinned（置顶优先排序）
+  - Modified: 无
+  - Removed: 无
   - TODO: 无
 -->
 # 个人博客 Constitution
 
-- **Version**: 2.0.0
+- **Version**: 2.0.1
 - **Ratification Date**: 2026-09-03
 - **Last Amended**: 2026-09-10
 
@@ -17,13 +17,14 @@
 ## Core Principles
 
 ### I. 设计系统锁定
-所有页面必须使用 `src/styles/design.css` 中锁定的 Design Tokens：`--bg:#FCFDFF; --text:#1B2430; --accent:#3B6FE0` 等（暗色 `#0F172A`/`#E6EDF7`/`#7AA2FF`）。衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变、无彩色图标。禁止引入新设计风格或偏离 tokens 的硬编码颜色。
+所有页面必须使用 `src/styles/design.css` 中锁定的 Design Tokens：`--bg:#FCFDFF; --text:#1B2430; --accent:#3B6FE0` 等（暗色 `#0F172A`/`#E6EDF7`/`#7AA2FF`）。衬线标题（字距 0.04em）、Inter 350 正文、容器 900px、圆角 12px、段间距 > 行间距、无渐变、无彩色图标。禁止引入新设计风格或偏离 tokens 的硬编码颜色。新增派生变量（如 `--hero-overlay`）须由既有 tokens 派生。
 
 ### II. 共享骨架组件优先
 新页面一律使用共享骨架组件：`PageHero.vue`（页面头部）、`GroupLabel.vue`（分组标题）、`EmptyState.vue`（空状态）、`DeleteBar.vue`（密码确认条）。页面骨架约定：`PageHero → 筛选/工具区 → GroupLabel 分组 → EmptyState 兜底`。禁止写内联重复类或手写空态。
+**例外（2026-09-10，feature 002）**：首页允许自定义横幅 hero（背景图 + 遮罩 + 居中标题），须复用 `.hero-title/.hero-sub/.hero-stats` 等全局类与 tokens；其余页面仍强制 PageHero。
 
 ### III. 内容模块约定
-- 文章：`src/posts/*.md`，frontmatter 含 title/date/tags，英文短横线命名
+- 文章：`src/posts/*.md`，frontmatter 含 title/date/tags（英文短横线命名）；可选字段：`cover`（相对 public 根的图片路径，如 `bg/xxx.png`）、`category`（分类）、`pinned`（`true` 置顶，置顶优先排序）、`updated`（更新日期）
 - 随笔：`src/notes/*.md`，frontmatter 仅需 date（title 可选）
 - 随笔删除走回收站：`moveFile` 移入 `src/notes-trash/`，还原移回，彻底删除直接 DELETE
 - 背景图：`public/bg/`，仅由设置面板以 URL 引用（`settings.background` / `settings.navBackground`），无上传流程
@@ -45,3 +46,4 @@
 - AI 代理团队：`.opencode/agent/` 中 blog-dev（实现）、blog-reviewer（只读审查）、blog-qa（构建验证+验收裁决）
 - 循环流程 `/devloop <需求>`：开发 → 构建 → 审查 → 验收，不通过自动带修复指令重跑（最多 3 轮）
 - 验收铁律：build 零错误、不碰构建文件、符合设计 tokens、无副本文件、需求逐项覆盖
+- Spec Kit：较大功能先走 speckit（spec → plan → tasks → implement → converge），feature 编号顺序递增

@@ -19,7 +19,7 @@
 
 ## 内容规则
 
-- 文章：`src/posts/*.md`，frontmatter 含 title/date/tags，英文短横线命名
+- 文章：`src/posts/*.md`，frontmatter 含 title/date/tags，英文短横线命名；可选字段：`cover`（相对 public 根的图片路径，如 `bg/xxx.png`，首页卡片封面）、`category`（分类，首页卡片展示）、`pinned`（`true` 置顶，首页排序优先）、`updated`（更新日期，卡片展示「更新于」）
 - 随笔：`src/notes/*.md`，frontmatter 仅需 date（title 可选）
 - 随笔回收站：删除时 `moveFile` 把 `src/notes/<slug>.md` 移至 `src/notes-trash/`（glob 排除在站点外），还原移回，彻底删除直接 DELETE；`utils/notes.js` 的 `getTrashedNotes()` 与 `utils/localMedia.js` 的本地 trash 记录供回收站 UI 读取
 - 修改已有文件直接编辑，不新建副本
@@ -37,6 +37,7 @@
 - `src/components/EmptyState.vue`：统一空状态（text/sub/操作插槽），禁止再写内联 `hero-sub` + padding 空态
 - `src/components/DeleteBar.vue`：统一密码确认条（`v-model:pwd` + confirm/cancel + busy 防并发），删除/危险操作必用
 - 页面骨架约定：`PageHero → 筛选/工具区 → GroupLabel 分组 → EmptyState 兜底`；改动样式优先复用既有 tokens 类，不新增重复类
+- **首页 hero 例外（2026-09-10，feature 002）**：首页顶部为自定义横幅（背景图 `public/bg/bg-1786809364416.png` + `--hero-overlay` 遮罩 + 居中标题/统计），复用 `.hero-title/.hero-sub/.hero-stats` 全局类；其余页面仍强制 PageHero。首页为双栏布局：左主栏（搜索 + 图文卡片流，`src/views/HomeView.vue` 卡片支持 cover/置顶/分类/标签/摘要）、右侧栏（博主信息/网站资讯/标签云/GitHub 链接），≤960px 单栏侧栏置底
 
 ## 随笔回收站 Token 配置
 
@@ -80,7 +81,7 @@
 
 | 模块 | 元数据目录 | 说明 |
 |---|---|---|
-| 文章 | `src/posts/*.md` | frontmatter: title/date/tags |
+| 文章 | `src/posts/*.md` | frontmatter: title/date/tags（可选 cover/category/pinned/updated） |
 | 随笔 | `src/notes/*.md` | frontmatter: date（title 可选） |
 | 随笔回收站 | `src/notes-trash/*.md` | 删除/还原/彻底删除（GitHub API + 本地 trash 记录） |
 
