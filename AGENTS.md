@@ -38,9 +38,10 @@
 - `src/components/DeleteBar.vue`：统一密码确认条（`v-model:pwd` + confirm/cancel + busy 防并发），删除/危险操作必用
 - 页面骨架约定：`PageHero → 筛选/工具区 → GroupLabel 分组 → EmptyState 兜底`；改动样式优先复用既有 tokens 类，不新增重复类
 
-## 编辑工具
+## 随笔回收站 Token 配置
 
-- 网页端随笔编辑器：https://wmoonlq.github.io/blog/#/notes/editor（首次需在高级选项中粘贴一次 Token，存于浏览器 localStorage，之后免粘贴）
+- 随笔页「管理」的删除/还原/彻底删除走 GitHub API（`utils/githubFiles.js`），密码门禁 `123456`（前端防刷），Token 复用 localStorage `notes-token`
+- 网页端编辑器已下线（2026-09-10 站点收敛），Token 需在浏览器控制台执行 `localStorage.setItem('notes-token', '你的 PAT')` 配置，仅本仓库 Contents 读写权限
 
 ## 开发日记
 
@@ -57,9 +58,10 @@
 ## Spec Kit（规格驱动开发，2026-09-03 起）
 
 - 已装 GitHub Spec Kit（`specify-cli` 1.0.4，pip 安装）+ opencode integration：斜杠命令在 `.opencode/commands/speckit.*.md`，模板/脚本/工作流在 `.specify/`，宪法在 `.specify/memory/constitution.md`
-- 流程：`/speckit.constitution`（项目原则，已填博客版宪法）→ `/speckit.specify`（功能规格，生成 `specs/<分支名>/spec.md`）→ `/speckit.plan`（技术计划）→ `/speckit.tasks`（任务分解）→ `/speckit.implement`（实现）→ `/speckit.converge`（对照收敛，循环至 Converged）
+- 流程：`/speckit.constitution`（项目原则，博客版宪法 v2.0.0）→ `/speckit.specify`（功能规格，生成 `specs/<NNN>-<name>/spec.md`）→ `/speckit.plan`（技术计划）→ `/speckit.tasks`（任务分解）→ `/speckit.implement`（实现）→ `/speckit.converge`（对照收敛，循环至 Converged）
 - 可选命令：`/speckit.clarify`（plan 前澄清）、`/speckit.analyze`（tasks 后一致性分析）、`/speckit.checklist`（质量清单）
 - 命令格式为 markdown、`$ARGUMENTS` 传参；脚本类型选了 `ps`（Windows 默认），核心命令模板的 `{SCRIPT}` 会解析到 `.specify/scripts/powershell/`
+- 首个功能规格：`specs/001-blog-simplify/`（2026-09-10 站点收敛）；后续 feature 编号顺延（`feature_numbering: sequential`）
 - 升级 CLI：`specify self check` / `specify self upgrade`；本项目从 PyPI 装 `specify-cli`（非 git 版本）
 - 与既有 devloop 的关系：小改动继续走 `/devloop`；较大功能需求可先用 speckit 流程产出 spec/plan/tasks，再交 blog-dev 实现
 
@@ -71,23 +73,17 @@
 - 动态标题：`router.js` afterEach 按路由 meta 设置 `document.title`（文章页取 post title）
 - 文章页（PostView.vue）：分享按钮（Web Share API，桌面回退复制链接）、正文图片点击预览大图（`.lightbox`，Esc/点击关闭）、≤1080px 目录折叠为按钮（`.toc-toggle`）
 - 搜索（SearchModal.vue）：关键词 `<mark>` 高亮 + 标题/标签命中优先排序 + 文章也显示摘要
+- 设置（SettingsPanel.vue）：外观（暗色模式）+ 背景图片（URL 引用，`settings.background` / `settings.navBackground`，全站背景层 `BgImage.vue`，无上传流程）
 - 评论：`src/components/GiscusComments.vue` 已挂载于文章页，`data-mapping="specific"` + `term=slug`（适配 hash 路由）；**待办**：需用户在 GitHub 仓库启用 Discussions 后，把真实 `CATEGORY_ID`（API 查询 `GET /repos/wmoonlq/blog/discussions/categories`）填入组件，评论区即生效（repo-id=`R_kgDOT2U2qw`）
 
-## 内容与媒体模块速查
+## 内容与模块速查
 
-| 模块 | 元数据目录 | 文件目录 | 说明 |
-|---|---|---|---|
-| 文章 | `src/posts/*.md` | — | frontmatter: title/date/tags |
-| 随笔 | `src/notes/*.md` | — | frontmatter: date（title 可选） |
-| 视频 | `src/videos/*.md` | `public/videos/` | frontmatter: title/date/source/category/collections/poster/type |
-| 音乐 | `src/music/*.md` | `public/music/` | frontmatter: title/date/source/artist/cover/lyrics/yrc/type |
-| 背景图 | — | `public/bg/` | 由特效页上传，无元数据 |
+| 模块 | 元数据目录 | 说明 |
+|---|---|---|
+| 文章 | `src/posts/*.md` | frontmatter: title/date/tags |
+| 随笔 | `src/notes/*.md` | frontmatter: date（title 可选） |
+| 随笔回收站 | `src/notes-trash/*.md` | 删除/还原/彻底删除（GitHub API + 本地 trash 记录） |
 
-- 媒体上传/删除统一走 `src/utils/githubFiles.js`：密码门禁 `123456`（前端校验防刷），Token 复用 localStorage `notes-token`（fine-grained PAT）
-- 上传后立即显示：`src/utils/localMedia.js` 本地记录待发布条目（带「待发布」角标），构建完成按 slug 去重自动转正式
-- 视频分类/集合由 `src/videos/video-meta.json` 单一数据源驱动：`categories`（分区列表）+ `collections`（id/name/description/sort）；视频 md 用 `collections: ["id"]` 数组（多对多、可空集合），旧 `collection: "名称"` 字段由 `utils/videos.js` 按名称匹配回退兼容（上传/下载流程仍写旧字段）
-- 视频支持「从链接下载」：`src/components/VideoDownloader.vue` 把链接写入 `downloads/queue.json` → push 触发 `.github/workflows/download.yml`（yt-dlp 抓取 720p≤300M 到 `public/videos/` + 生成元数据 md + 自动提交）→ 该 workflow 用 `gh workflow run deploy.yml` 显式触发部署（GITHUB_TOKEN 的 push 不会触发下游 workflow）；deploy.yml 已 `paths-ignore: ['downloads/**']` 避免队列文件触发空构建
-- **B 站限制**：download.yml 已内置「调 `x/frontend/finger/spi` 拿真实 buvid3/buvid4 写 cookies」逻辑，但 GitHub runner（美国机房 IP）对 B 站内容接口仍 412 → 浏览器「从链接下载」对 B 站不可用，只能本机下载（直连 + 真实 cookie + ffmpeg，见 devlog 踩坑 5）；本机 ffmpeg 可用 `pip install imageio-ffmpeg` 取静态二进制
-- 歌词：LRC 解析在 `src/utils/lrc.js`（支持 `[offset:]` 标签）；播放器内置歌词校准（±0.1/0.5s，按歌曲记忆）；官方歌词源可用网易云 API `music.163.com/api/song/lyric?id=`
-- 歌曲时长可用 FLAC STREAMINFO 解析（sample rate 20bit @ offset 10，total samples 36bit @ offset 14）
-- 音乐个性化（收藏/歌单/最近播放）走 `src/stores/musicPrefs.js` localStorage（`music-favorites`/`music-playlists`/`music-history`），不写仓库；播放器酷狗风格：头部唱片+信息+主控制（`.mp-head`）、进度条两端时间（`.mp-progress-row`）、歌词/播放列表 Tab 切换（`.mp-panel`+`.mp-tabs`，默认列表）、表格式曲目列表（序号/歌曲/歌手/时长，当前行跳动条 `.mp-eq`，hover 收藏，时长懒探测 `Audio preload=metadata`）、底部工具条（`.mp-bar` 音量/倍速/睡眠定时）、Media Session、播放即建队（`playTracks`，视图切换不打断播放）；音乐上传（MediaManager kind=music）支持封面/歌词 .lrc/逐字 .yrc 可选文件，写入 md `cover`/`lyrics`/`yrc`
+- 已下线模块（2026-09-10 站点收敛，git 历史可恢复）：视频（`src/videos/`、`public/videos/`、下载器与 `download.yml`）、音乐（`src/music/`、`public/music/`、播放器与歌词）、工作台小工具、特效陈列室（three.js 与 `components/effects/`）、网页编辑器（文章/随笔）、媒体管理器与背景上传、身份档案
+- 背景图：`public/bg/` 保留，仅由设置面板以 URL 引用，无上传流程
+- 随笔删除/还原/彻底删除走 `src/utils/githubFiles.js`（密码门禁 `123456` 前端防刷），Token 复用 localStorage `notes-token`

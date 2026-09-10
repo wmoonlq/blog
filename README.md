@@ -18,6 +18,14 @@ npm run build    # 构建产物 dist/
 npm run preview  # 预览构建产物
 ```
 
+## 站点结构
+
+- 首页（文章）：文章列表，按年份分组，支持标签筛选与站内搜索
+- 随笔：碎片记录，按月份分组，支持管理（删除→回收站→还原/彻底删除）
+- 时间线：GitHub 提交记录（优先 API，回退本地 commits.json）
+- 关于：站点统计与技术栈
+- 文章详情：目录、字号调节、代码复制、图片预览、分享、评论（Giscus）
+
 ## 写文章
 
 1. 在 `src/posts/` 新建 `.md` 文件，文件名使用英文短横线命名，例如 `vite-blog-note.md`
@@ -53,17 +61,27 @@ date: "2026-08-12"
 
 也可以直接在 GitHub 网页上新建/编辑 `src/notes/` 下的文件，保存即自动构建发布，手机也能写。
 
+### 随笔回收站（管理）
+
+随笔页「管理」模式支持删除（移入 `src/notes-trash/`）、还原、彻底删除，通过 GitHub API 操作，需要：
+
+- 操作密码：`123456`（前端防刷）
+- Token：在浏览器控制台执行 `localStorage.setItem('notes-token', '你的 fine-grained PAT')`（仅本仓库 Contents 读写权限）
+
 ## 目录结构
 
 ```
 ├── .github/workflows/deploy.yml   # GitHub Pages 自动部署
-├── index.html                     # 入口 HTML（字体加载）
+├── index.html                     # 入口 HTML（字体加载 + SEO 元信息）
 ├── vite.config.js                 # Vite 配置（base: /blog/）
+├── specs/                         # Spec Kit 规格驱动开发产物（spec/plan/tasks）
 └── src/
     ├── posts/                     # 文章（markdown 源）
+    ├── notes/                     # 随笔（markdown 源）
+    ├── notes-trash/               # 随笔回收站（glob 排除在站点外）
     ├── styles/design.css          # 设计系统（Design Tokens + 排版规则）
-    ├── components/BlogNav.vue     # 导航（backdrop blur）
-    ├── views/                     # 首页 / 文章详情页
+    ├── components/                # 导航 / 设置 / 搜索 / 评论 / 骨架组件
+    ├── views/                     # 首页 / 随笔 / 文章详情 / 时间线 / 关于
     └── utils/                     # 文章扫描与 Markdown 渲染
 ```
 
@@ -108,3 +126,5 @@ Design Tokens 强制锁定于 `src/styles/design.css` 的 `:root`，不得随意
 
 - 修改文章只编辑 `src/posts/` 下的 md 文件，不要新建副本
 - 禁止修改 `vite.config.js`、`scripts/`、`src/generated/` 等构建相关文件
+- 新页面使用共享骨架组件（PageHero / GroupLabel / EmptyState / DeleteBar），遵循设计 tokens
+- 开发结束后同步 `devlog/README.md` 与 `AGENTS.md`（项目记忆）
